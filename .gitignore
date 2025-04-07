@@ -1,3 +1,4 @@
 *.o
 launchStrategy
 blobwar
+.vscode/

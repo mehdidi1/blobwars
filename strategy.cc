@@ -1,6 +1,7 @@
 #include "strategy.h"
 #include "greedy.h"
 #include <sys/time.h>
+#include "minimax.h"
 
 void Strategy::applyMove(const movement &mv)
 {
@@ -97,31 +98,53 @@ vector<movement> &Strategy::computeValidMoves(vector<movement> &valid_moves) con
 }
 
 // Strategy selector
+// void Strategy::computeBestMove()
+// {
+//     // Add timing code
+//     struct timeval start_time, end_time;
+//     gettimeofday(&start_time, NULL);
+
+//     // Existing code
+// #ifdef USE_GREEDY
+//     greedy::computeBestMoveWithScore(*this);
+// #elif defined(USE_MINIMAX)
+//     minimax::computeBestMoveWithScore(*this);
+// #else
+//     // Default strategy implementation...
+//     movement best_move(0, 0, 0, 0);
+//     vector<movement> valid_moves;
+//     computeValidMoves(valid_moves);
+
+//     if (!valid_moves.empty())
+//     {
+//         best_move = valid_moves[0]; // Just pick the first valid move
+//     }
+
+//     _saveBestMove(best_move);
+// #endif
+
+//     // Calculate and display elapsed time
+//     gettimeofday(&end_time, NULL);
+//     double elapsed = ((end_time.tv_sec - start_time.tv_sec) * 1000.0) +
+//                      ((end_time.tv_usec - start_time.tv_usec) / 1000.0);
+//     std::cout << "Best move computation took " << elapsed << " milliseconds" << std::endl;
+// }
+
+
 void Strategy::computeBestMove()
 {
     // Add timing code
     struct timeval start_time, end_time;
     gettimeofday(&start_time, NULL);
 
-    // Existing code
-#ifdef USE_GREEDY
-    greedy::computeBestMoveWithScore(*this);
-#elif defined(USE_MINIMAX)
-    minimax::computeBestMoveWithScore(*this);
-#else
-    // Default strategy implementation...
-    movement best_move(0, 0, 0, 0);
-    vector<movement> valid_moves;
-    computeValidMoves(valid_moves);
-
-    if (!valid_moves.empty())
-    {
-        best_move = valid_moves[0]; // Just pick the first valid move
+    // Select strategy based on the current player
+    if (_current_player == 0) {
+        // Player 0 uses Minimax
+        minimax::computeBestMoveWithScore(*this);
+    } else if (_current_player == 1) {
+        // Player 1 uses Greedy
+        greedy::computeBestMoveWithScore(*this);
     }
-
-    _saveBestMove(best_move);
-#endif
-
     // Calculate and display elapsed time
     gettimeofday(&end_time, NULL);
     double elapsed = ((end_time.tv_sec - start_time.tv_sec) * 1000.0) +
