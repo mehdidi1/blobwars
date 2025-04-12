@@ -4,15 +4,15 @@
 namespace minimax {
 
     // Depth limit for the Minimax algorithm
-    const int MAX_DEPTH = 2;
+    const int MAX_DEPTH = 4;
 
     // Minimax recursive function
-    Sint32 minimax(Strategy& strategy, int depth, bool maximizingPlayer) {
+    Sint32 minimax(Strategy& strategy, int depth, bool maximizingPlayer,Sint32 root_player) {
         // Base case: if we reach the maximum depth or no valid moves are left
         vector<movement> valid_moves;
         strategy.computeValidMoves(valid_moves);
         if (depth == 0 || valid_moves.empty()) {
-            return strategy.estimateCurrentScore();
+            return strategy.estimateCurrentScore(root_player);
         }
 
         // Maximizing player
@@ -21,7 +21,7 @@ namespace minimax {
             for (const movement& mv : valid_moves) {
                 Strategy sim_strategy(strategy); // Simulate the move
                 sim_strategy.applyMove(mv);
-                Sint32 eval = minimax(sim_strategy, depth - 1, false);
+                Sint32 eval = minimax(sim_strategy, depth - 1, false,root_player);
                 maxEval = std::max(maxEval, eval);
             }
             return maxEval;
@@ -32,7 +32,7 @@ namespace minimax {
             for (const movement& mv : valid_moves) {
                 Strategy sim_strategy(strategy); // Simulate the move
                 sim_strategy.applyMove(mv);
-                Sint32 eval = minimax(sim_strategy, depth - 1, true);
+                Sint32 eval = minimax(sim_strategy, depth - 1, true,root_player);
                 minEval = std::min(minEval, eval);
             }
             return minEval;
@@ -51,7 +51,15 @@ namespace minimax {
         // If no valid moves, return an empty move
         if (valid_moves.empty()) {
             strategy._saveBestMove(best_move);
+            std::cout << "No valid move available" << endl;
             return;
+        }
+
+        //Save a random move in case we don't finish computing
+        if (!valid_moves.empty()) {
+            srand(time(0)); // Seed for randomness
+            int random_index = rand() % valid_moves.size();
+            strategy._saveBestMove(valid_moves[random_index]);
         }
 
         // Evaluate each move
@@ -60,12 +68,7 @@ namespace minimax {
             sim_strategy.applyMove(mv);
 
             // Call Minimax for the opponent's turn
-            Sint32 score = minimax(sim_strategy, MAX_DEPTH - 1, false);
-
-            // For player 1, invert the score
-            if (strategy._current_player == 1) {
-                score = -score;
-            }
+            Sint32 score = minimax(sim_strategy, MAX_DEPTH - 1, false,strategy._current_player);
 
             // Keep track of the best move
             if (score > best_score) {

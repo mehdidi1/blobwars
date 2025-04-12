@@ -30,10 +30,11 @@ void Strategy::applyMove(const movement &mv)
                 _blobs.set(x, y, _current_player);
         }
     }
+    _current_player =  !_current_player;
 }
 
 // Default scoring function
-Sint32 Strategy::estimateCurrentScore() const
+Sint32 Strategy::estimateCurrentScore(Sint32 player) const
 {
     Sint32 player0_score = 0;
     Sint32 player1_score = 0;
@@ -48,6 +49,10 @@ Sint32 Strategy::estimateCurrentScore() const
             else if (_blobs.get(x, y) == 1)
                 player1_score++;
         }
+    }
+
+    if (player == 1){
+        return player1_score - player0_score;
     }
 
     return player0_score - player1_score;
@@ -130,20 +135,25 @@ vector<movement> &Strategy::computeValidMoves(vector<movement> &valid_moves) con
 //     std::cout << "Best move computation took " << elapsed << " milliseconds" << std::endl;
 // }
 
-
 void Strategy::computeBestMove()
 {
+    // Player 1 is blue
+    // Player 0 is red
+
     // Add timing code
     struct timeval start_time, end_time;
     gettimeofday(&start_time, NULL);
 
     // Select strategy based on the current player
-    if (_current_player == 0) {
+    if (_current_player == 0)
+    {
         // Player 0 uses Minimax
         minimax::computeBestMoveWithScore(*this);
-    } else if (_current_player == 1) {
+    }
+    else if (_current_player == 1)
+    {
         // Player 1 uses Greedy
-        greedy::computeBestMoveWithScore(*this);
+        minimax::computeBestMoveWithScore(*this);
     }
     // Calculate and display elapsed time
     gettimeofday(&end_time, NULL);

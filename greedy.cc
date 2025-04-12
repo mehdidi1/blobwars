@@ -2,8 +2,8 @@
 #include "greedy.h"
 
 namespace greedy {
-    Sint32 estimateScore(const Strategy& strategy) {
-        return strategy.estimateCurrentScore(); //Use default 
+    Sint32 estimateScore(const Strategy& strategy,Sint32 player) {
+        return strategy.estimateCurrentScore(player); //Use default 
     }
     
     void computeBestMoveWithScore(Strategy& strategy) {
@@ -17,9 +17,8 @@ namespace greedy {
             Strategy sim_strategy(strategy);  // Create a copy
             sim_strategy.applyMove(mv);
             
-            Sint32 score = estimateScore(sim_strategy);
-            if (strategy._current_player == 1)
-                score = -score;
+            Sint32 score = estimateScore(sim_strategy,strategy._current_player);
+
                 
             if (score > best_score) {
                 best_score = score;

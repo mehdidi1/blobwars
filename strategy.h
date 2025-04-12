@@ -54,7 +54,7 @@ public:
     /**
      * Estimate the score of the current state of the game
      */
-    Sint32 estimateCurrentScore() const;
+    Sint32 estimateCurrentScore(Sint32 player) const;
 
     /**
      * Find the best move.
