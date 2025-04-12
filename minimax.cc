@@ -5,7 +5,7 @@ namespace minimax
 {
 
     // Depth limit for the Minimax algorithm
-    const int MAX_DEPTH = 4;
+    const int MAX_DEPTH = 3;
 
     // Minimax recursive function
     Sint32 minimax(Strategy &strategy, int depth, bool maximizingPlayer, Sint32 root_player)

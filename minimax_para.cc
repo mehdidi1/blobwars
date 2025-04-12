@@ -6,43 +6,89 @@
 #include <atomic>
 
 namespace minimax_para {
+ // Depth limit for the Minimax algorithm
+ const int MAX_DEPTH = 3;
+    
+ // Threshold for parallelization - only parallelize deeper levels
+ const int PARALLEL_THRESHOLD = 1;
 
-    // Depth limit for the Minimax algorithm
-    const int MAX_DEPTH = 4;
+ // Minimax recursive function with internal parallelization
+ Sint32 minimax(Strategy& strategy, int depth, bool maximizingPlayer, Sint32 root_player) {
+     // Base case: if we reach the maximum depth or no valid moves are left
+     vector<movement> valid_moves;
+     strategy.computeValidMoves(valid_moves);
+     if (depth == 0 || valid_moves.empty()) {
+         return strategy.estimateCurrentScore(root_player);
+     }
 
-    // Minimax recursive function
-    Sint32 minimax(Strategy& strategy, int depth, bool maximizingPlayer,Sint32 root_player) {
-        // Base case: if we reach the maximum depth or no valid moves are left
-        vector<movement> valid_moves;
-        strategy.computeValidMoves(valid_moves);
-        if (depth == 0 || valid_moves.empty()) {
-            return strategy.estimateCurrentScore(root_player);
-        }
-
-        // Maximizing player
-        if (maximizingPlayer) {
-            Sint32 maxEval = std::numeric_limits<Sint32>::min();
-            for (const movement& mv : valid_moves) {
-                Strategy sim_strategy(strategy); // Simulate the move
-                sim_strategy.applyMove(mv);
-                Sint32 eval = minimax(sim_strategy, depth - 1, false,root_player);
-                maxEval = std::max(maxEval, eval);
-            }
-            return maxEval;
-        }
-        // Minimizing player
-        else {
-            Sint32 minEval = std::numeric_limits<Sint32>::max();
-            for (const movement& mv : valid_moves) {
-                Strategy sim_strategy(strategy); // Simulate the move
-                sim_strategy.applyMove(mv);
-                Sint32 eval = minimax(sim_strategy, depth - 1, true,root_player);
-                minEval = std::min(minEval, eval);
-            }
-            return minEval;
-        }
-    }
-
+     // Only parallelize deeper levels with enough moves to justify the overhead
+     if (depth >= PARALLEL_THRESHOLD && valid_moves.size() > 3) {
+         // Maximizing player with parallel reduction
+         if (maximizingPlayer) {
+             return tbb::parallel_reduce(
+                 tbb::blocked_range<size_t>(0, valid_moves.size()),
+                 std::numeric_limits<Sint32>::min(),
+                 [&](const tbb::blocked_range<size_t>& range, Sint32 local_max) {
+                     for (size_t i = range.begin(); i < range.end(); ++i) {
+                         const movement& mv = valid_moves[i];
+                         Strategy sim_strategy(strategy);
+                         sim_strategy.applyMove(mv);
+                         Sint32 eval = minimax(sim_strategy, depth - 1, false, root_player);
+                         local_max = std::max(local_max, eval);
+                     }
+                     return local_max;
+                 },
+                 [](Sint32 a, Sint32 b) {
+                     return std::max(a, b);
+                 }
+             );
+         }
+         // Minimizing player with parallel reduction
+         else {
+             return tbb::parallel_reduce(
+                 tbb::blocked_range<size_t>(0, valid_moves.size()),
+                 std::numeric_limits<Sint32>::max(),
+                 [&](const tbb::blocked_range<size_t>& range, Sint32 local_min) {
+                     for (size_t i = range.begin(); i < range.end(); ++i) {
+                         const movement& mv = valid_moves[i];
+                         Strategy sim_strategy(strategy);
+                         sim_strategy.applyMove(mv);
+                         Sint32 eval = minimax(sim_strategy, depth - 1, true, root_player);
+                         local_min = std::min(local_min, eval);
+                     }
+                     return local_min;
+                 },
+                 [](Sint32 a, Sint32 b) {
+                     return std::min(a, b);
+                 }
+             );
+         }
+     }
+     else {
+         // Sequential implementation for smaller subtrees
+         if (maximizingPlayer) {
+             Sint32 maxEval = std::numeric_limits<Sint32>::min();
+             for (const movement& mv : valid_moves) {
+                 Strategy sim_strategy(strategy);
+                 sim_strategy.applyMove(mv);
+                 Sint32 eval = minimax(sim_strategy, depth - 1, false, root_player);
+                 maxEval = std::max(maxEval, eval);
+             }
+             return maxEval;
+         }
+         // Minimizing player
+         else {
+             Sint32 minEval = std::numeric_limits<Sint32>::max();
+             for (const movement& mv : valid_moves) {
+                 Strategy sim_strategy(strategy);
+                 sim_strategy.applyMove(mv);
+                 Sint32 eval = minimax(sim_strategy, depth - 1, true, root_player);
+                 minEval = std::min(minEval, eval);
+             }
+             return minEval;
+         }
+     }
+ }
     // Compute the best move using Minimax
     void computeBestMoveWithScore(Strategy& strategy) {
         movement best_move(0, 0, 0, 0);
