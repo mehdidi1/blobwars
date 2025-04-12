@@ -3,6 +3,7 @@
 #include <sys/time.h>
 #include "minimax.h"
 #include "minimax_para.h"
+#include "alpha_beta.h"
 
 void Strategy::applyMove(const movement &mv)
 {
@@ -152,7 +153,7 @@ void Strategy::computeBestMove()
     }
     else if (_current_player == 1)
     {
-        minimax_para::computeBestMoveWithScore(*this);
+        alpha_beta::computeBestMoveWithScore(*this);
     }
     // Calculate and display elapsed time
     gettimeofday(&end_time, NULL);
