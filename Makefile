@@ -1,11 +1,11 @@
 
 
-OBJS = strategy.o blobwar.o main.o font.o mouse.o image.o widget.o rollover.o button.o label.o board.o rules.o blob.o network.o bidiarray.o shmem.o greedy.o minimax.o
+OBJS = strategy.o blobwar.o main.o font.o mouse.o image.o widget.o rollover.o button.o label.o board.o rules.o blob.o network.o bidiarray.o shmem.o greedy.o minimax.o minimax_para.o
 
-OBJS_launchComputation = launchStrategy.o strategy.o bidiarray.o shmem.o greedy.o minimax.o
+OBJS_launchComputation = launchStrategy.o strategy.o bidiarray.o shmem.o greedy.o minimax.o minimax_para.o
 
 
-LIBS = -lSDL_image -lSDL_ttf -lm `sdl-config --libs` -lSDL_net -lpthread
+LIBS = -lSDL_image -lSDL_ttf -lm `sdl-config --libs` -lSDL_net -lpthread -ltbb
 
 CFLAGS = -Wall -Werror -O3 -g `sdl-config --cflags`  -Wno-strict-aliasing -DDEBUG -DUSE_MINIMAX
 CC = g++

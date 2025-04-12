@@ -2,6 +2,7 @@
 #include "greedy.h"
 #include <sys/time.h>
 #include "minimax.h"
+#include "minimax_para.h"
 
 void Strategy::applyMove(const movement &mv)
 {
@@ -147,13 +148,11 @@ void Strategy::computeBestMove()
     // Select strategy based on the current player
     if (_current_player == 0)
     {
-        // Player 0 uses Minimax
-        minimax::computeBestMoveWithScore(*this);
+        greedy::computeBestMoveWithScore(*this);
     }
     else if (_current_player == 1)
     {
-        // Player 1 uses Greedy
-        greedy::computeBestMoveWithScore(*this);
+        minimax_para::computeBestMoveWithScore(*this);
     }
     // Calculate and display elapsed time
     gettimeofday(&end_time, NULL);
