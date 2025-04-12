@@ -71,12 +71,6 @@ namespace alpha_beta_para {
             return;
         }
 
-        // Save a random move as fallback in case computation is interrupted
-        if (!valid_moves.empty()) {
-            srand(time(0)); // Seed for randomness
-            int random_index = rand() % valid_moves.size();
-            strategy._saveBestMove(valid_moves[random_index]);
-        }
 
         // Parallel evaluation of all moves using TBB
         tbb::parallel_for(
@@ -99,13 +93,13 @@ namespace alpha_beta_para {
                         if (score > best_score) {  // Double-check after obtaining lock
                             best_score = score;
                             best_move = mv;
+                            strategy._saveBestMove(best_move);
                         }
                     }
                 }
             }
         );
 
-        // Save the best move
-        strategy._saveBestMove(best_move);
+
     }
 }

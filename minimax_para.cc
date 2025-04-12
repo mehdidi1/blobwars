@@ -60,13 +60,6 @@ namespace minimax_para {
             return;
         }
 
-        //Save a random move in case we don't finish computing
-        if (!valid_moves.empty()) {
-            srand(time(0)); // Seed for randomness
-            int random_index = rand() % valid_moves.size();
-            strategy._saveBestMove(valid_moves[random_index]);
-        }
-
         // Evaluate each move in parallel
         tbb::parallel_for(
             tbb::blocked_range<size_t>(0, valid_moves.size()),
@@ -86,6 +79,7 @@ namespace minimax_para {
                         if (score > best_score) {
                             best_score = score;
                             best_move = mv;
+                            strategy._saveBestMove(best_move);
                         }
                         
                     }
@@ -93,7 +87,5 @@ namespace minimax_para {
             }
         );
 
-        // Save the best move
-        strategy._saveBestMove(best_move);
     }
 }
