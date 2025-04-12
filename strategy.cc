@@ -153,7 +153,7 @@ void Strategy::computeBestMove()
     else if (_current_player == 1)
     {
         // Player 1 uses Greedy
-        minimax::computeBestMoveWithScore(*this);
+        greedy::computeBestMoveWithScore(*this);
     }
     // Calculate and display elapsed time
     gettimeofday(&end_time, NULL);
