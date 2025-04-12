@@ -148,7 +148,7 @@ void Strategy::computeBestMove()
     // Select strategy based on the current player
     if (_current_player == 0)
     {
-        greedy::computeBestMoveWithScore(*this);
+        minimax::computeBestMoveWithScore(*this);
     }
     else if (_current_player == 1)
     {

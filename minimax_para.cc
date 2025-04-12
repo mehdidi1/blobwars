@@ -2,13 +2,13 @@
 #include <limits>
 #include <tbb/tbb.h>
 #include <tbb/parallel_for.h>
-#include <tbb/mutex.h>
+#include <tbb/spin_mutex.h>
 #include <atomic>
 
 namespace minimax_para {
 
     // Depth limit for the Minimax algorithm
-    const int MAX_DEPTH = 2;
+    const int MAX_DEPTH = 4;
 
     // Minimax recursive function
     Sint32 minimax(Strategy& strategy, int depth, bool maximizingPlayer,Sint32 root_player) {
@@ -48,7 +48,7 @@ namespace minimax_para {
         movement best_move(0, 0, 0, 0);
         std::atomic<Sint32> best_score{std::numeric_limits<Sint32>::min()};
         vector<movement> valid_moves;
-        tbb::mutex best_move_mutex;
+        tbb::spin_mutex best_move_mutex;
 
         // Get all valid moves
         strategy.computeValidMoves(valid_moves);
@@ -81,11 +81,13 @@ namespace minimax_para {
 
                     // Keep track of the best move
                     if (score > best_score) {
-                        tbb::mutex::scoped_lock lock(best_move_mutex);
+                        tbb::spin_mutex::scoped_lock lock(best_move_mutex);
+                        
                         if (score > best_score) {
                             best_score = score;
                             best_move = mv;
                         }
+                        
                     }
                 }
             }
