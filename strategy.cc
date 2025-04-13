@@ -7,6 +7,8 @@
 #include "alpha_beta.h"
 #include "alpha_beta_para.h"
 #include "feldman.h"
+#include "final_ai.h"
+#include "test.h"
 
 void Strategy::applyMove(const movement &mv)
 {
@@ -165,11 +167,11 @@ void Strategy::computeBestMove()
     // Select strategy based on the current player
     if (_current_player == 0)
     {
-        minimax::computeBestMoveWithScore(*this);
+        alpha_beta_para::computeBestMoveWithScore(*this);
     }
     else if (_current_player == 1)
     {
-        minimax_para::computeBestMoveWithScore(*this);
+        final_ai::computeBestMoveWithScore(*this);
     }
     
     // Calculate elapsed time

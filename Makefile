@@ -1,8 +1,8 @@
 
 
-OBJS = strategy.o blobwar.o main.o font.o mouse.o image.o widget.o rollover.o button.o label.o board.o rules.o blob.o network.o bidiarray.o shmem.o greedy.o minimax.o minimax_para.o alpha_beta.o alpha_beta_para.o feldman.o
+OBJS = strategy.o blobwar.o main.o font.o mouse.o image.o widget.o rollover.o button.o label.o board.o rules.o blob.o network.o bidiarray.o shmem.o greedy.o minimax.o minimax_para.o alpha_beta.o alpha_beta_para.o feldman.o final_ai.o test.o
 
-OBJS_launchComputation = launchStrategy.o strategy.o bidiarray.o shmem.o greedy.o minimax.o minimax_para.o alpha_beta.o alpha_beta_para.o feldman.o
+OBJS_launchComputation = launchStrategy.o strategy.o bidiarray.o shmem.o greedy.o minimax.o minimax_para.o alpha_beta.o alpha_beta_para.o feldman.o final_ai.o test.o
 
 
 LIBS = -lSDL_image -lSDL_ttf -lm `sdl-config --libs` -lSDL_net -lpthread -ltbb
