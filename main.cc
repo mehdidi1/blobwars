@@ -55,8 +55,13 @@
 /** this is the main game variable */
 blobwar *game;
 
+void cleanupOnExit() {
+    std::remove("move_stats.txt");
+}
+
 int main(int argc, char **argv)
 {
+	std::atexit(cleanupOnExit);
 	if(argc == 2 ) {
 		if(strcmp(argv[1],"-h")==0) {
 			printf("usage: ./blobwar [-t <time>]\n");
