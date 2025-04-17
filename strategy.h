@@ -1,9 +1,21 @@
-#ifndef __STRATEGY_H
-#define __STRATEGY_H
+#ifndef STRATEGY_H
+#define STRATEGY_H
 
 #include "common.h"
 #include "bidiarray.h"
 #include "move.h"
+#include <SDL/SDL.h>
+#include <vector>
+
+// Forward declaration
+class ChromosomeWeights;
+
+// Game phase enum
+enum GamePhase {
+    EARLY_GAME,
+    MID_GAME,
+    LATE_GAME
+};
 
 class Strategy
 {
@@ -22,6 +34,12 @@ public:
     //! Only the last move saved will be used.
     void (*_saveBestMove)(movement &);
 
+    // Reference to weights to use for evaluation
+    static ChromosomeWeights* evaluation_weights;
+    
+    // Method to use weights from genetic algorithm
+    bool useOptimizedWeights(ChromosomeWeights* weights);
+    
     // Constructor from a current situation
     Strategy(bidiarray<Sint16> &blobs,
              const bidiarray<bool> &holes,
@@ -56,12 +74,6 @@ public:
      */
     Sint32 estimateCurrentScore(Sint32 player) const;
 
-    enum GamePhase {
-        EARLY_GAME,
-        MID_GAME,
-        LATE_GAME
-    };
-    
     GamePhase detectGamePhase() const;
 
     Sint32 estimateCurrentScoreImproved(Sint32 player) const;

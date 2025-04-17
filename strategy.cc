@@ -10,6 +10,10 @@
 #include "final_ai.h"
 #include "test.h"
 #include <vector> // Make sure vector is included
+#include "ga_weight_optimizer.h"
+
+// Initialize static member
+ChromosomeWeights* Strategy::evaluation_weights = nullptr;
 
 void Strategy::applyMove(const movement &mv)
 {
@@ -199,37 +203,68 @@ Sint32 Strategy::estimateCurrentScoreImproved(Sint32 player) const
     Sint32 material_weight, corner_weight, mobility_weight;
     Sint32 positional_weight, capture_weight, frontier_weight;
 
-    switch (phase)
-    {
-    case EARLY_GAME:
-        // Early game: emphasize position and corners
-        material_weight = 80;
-        corner_weight = 120; // Higher emphasis on corners
-        mobility_weight = 15;
-        positional_weight = 20; // Higher emphasis on position
-        capture_weight = 20;
-        frontier_weight = -30; // Less penalty for frontiers early
-        break;
+    // Use optimization weights if available
+    if (Strategy::evaluation_weights != nullptr) {
+        switch (phase) {
+        case EARLY_GAME:
+            material_weight = Strategy::evaluation_weights->early_game.material_weight;
+            corner_weight = Strategy::evaluation_weights->early_game.corner_weight;
+            mobility_weight = Strategy::evaluation_weights->early_game.mobility_weight;
+            positional_weight = Strategy::evaluation_weights->early_game.positional_weight;
+            capture_weight = Strategy::evaluation_weights->early_game.capture_weight;
+            frontier_weight = Strategy::evaluation_weights->early_game.frontier_weight;
+            break;
+            
+        case MID_GAME:
+            material_weight = Strategy::evaluation_weights->mid_game.material_weight;
+            corner_weight = Strategy::evaluation_weights->mid_game.corner_weight;
+            mobility_weight = Strategy::evaluation_weights->mid_game.mobility_weight;
+            positional_weight = Strategy::evaluation_weights->mid_game.positional_weight;
+            capture_weight = Strategy::evaluation_weights->mid_game.capture_weight;
+            frontier_weight = Strategy::evaluation_weights->mid_game.frontier_weight;
+            break;
+            
+        case LATE_GAME:
+            material_weight = Strategy::evaluation_weights->late_game.material_weight;
+            corner_weight = Strategy::evaluation_weights->late_game.corner_weight;
+            mobility_weight = Strategy::evaluation_weights->late_game.mobility_weight;
+            positional_weight = Strategy::evaluation_weights->late_game.positional_weight;
+            capture_weight = Strategy::evaluation_weights->late_game.capture_weight;
+            frontier_weight = Strategy::evaluation_weights->late_game.frontier_weight;
+            break;
+        }
+    } else {
+        // Use default weights (your existing code)
+        switch (phase) {
+        case EARLY_GAME:
+            material_weight = 80;
+            corner_weight = 120; // Higher emphasis on corners
+            mobility_weight = 15;
+            positional_weight = 20; // Higher emphasis on position
+            capture_weight = 20;
+            frontier_weight = -30; // Less penalty for frontiers early
+            break;
 
-    case MID_GAME:
-        // Mid game: emphasize mobility and potential captures
-        material_weight = 100;
-        corner_weight = 70;
-        mobility_weight = 30; // Higher emphasis on mobility
-        positional_weight = 10;
-        capture_weight = 40; // Higher emphasis on potential captures
-        frontier_weight = -40;
-        break;
+        case MID_GAME:
+            // Mid game: emphasize mobility and potential captures
+            material_weight = 100;
+            corner_weight = 70;
+            mobility_weight = 30; // Higher emphasis on mobility
+            positional_weight = 10;
+            capture_weight = 40; // Higher emphasis on potential captures
+            frontier_weight = -40;
+            break;
 
-    case LATE_GAME:
-        // Late game: emphasize material count and reduce mobility importance
-        material_weight = 120; // Higher emphasis on material
-        corner_weight = 60;
-        mobility_weight = 10; // Less emphasis on mobility
-        positional_weight = 5;
-        capture_weight = 20;
-        frontier_weight = -50; // More penalty for vulnerable blobs
-        break;
+        case LATE_GAME:
+            // Late game: emphasize material count and reduce mobility importance
+            material_weight = 120; // Higher emphasis on material
+            corner_weight = 60;
+            mobility_weight = 10; // Less emphasis on mobility
+            positional_weight = 5;
+            capture_weight = 20;
+            frontier_weight = -50; // More penalty for vulnerable blobs
+            break;
+        }
     }
 
     // Apply phase-specific weights to scores
@@ -259,13 +294,24 @@ Sint32 Strategy::recognizePatterns(Sint32 player) const
     Sint32 opponent = 1 - player;
     Sint32 total_pattern_score = 0;
 
-    // Pattern weights - removed unused variables
-    const Sint32 FORTRESS_WEIGHT = 40;          // 2x2 blocks or L-shapes
-    const Sint32 WALL_WEIGHT = 25;              // Walls that restrict movement
-    const Sint32 INVASION_PLATFORM_WEIGHT = 30; // Positions to capture multiple opponent blobs
-    const Sint32 PINCER_WEIGHT = 35;            // Trapping opponents between blobs
-    const Sint32 EXPANSION_HUB_WEIGHT = 20;     // Blobs with multiple empty adjacent spaces
-    // Removed unused weight variables
+    // Pattern weights
+    Sint32 FORTRESS_WEIGHT, WALL_WEIGHT, INVASION_PLATFORM_WEIGHT, 
+           PINCER_WEIGHT, EXPANSION_HUB_WEIGHT;
+           
+    if (Strategy::evaluation_weights != nullptr) {
+        FORTRESS_WEIGHT = Strategy::evaluation_weights->fortress_weight;
+        WALL_WEIGHT = Strategy::evaluation_weights->wall_weight;
+        INVASION_PLATFORM_WEIGHT = Strategy::evaluation_weights->invasion_platform_weight;
+        PINCER_WEIGHT = Strategy::evaluation_weights->pincer_weight;
+        EXPANSION_HUB_WEIGHT = Strategy::evaluation_weights->expansion_hub_weight;
+    } else {
+        // Default values
+        FORTRESS_WEIGHT = 40;
+        WALL_WEIGHT = 25;
+        INVASION_PLATFORM_WEIGHT = 30;
+        PINCER_WEIGHT = 35;
+        EXPANSION_HUB_WEIGHT = 20;
+    }
 
     // --- Detect Fortress Formations (2x2 blocks or L-shapes) ---
     Sint32 my_fortress = 0, opp_fortress = 0;
@@ -683,7 +729,7 @@ void Strategy::computeBestMove()
     // Select strategy based on the current player
     if (_current_player == 0)
     {
-        alpha_beta_para::computeBestMoveWithScore(*this);
+        alpha_beta::computeBestMoveWithScore(*this);
     }
     else if (_current_player == 1)
     {
@@ -723,7 +769,7 @@ void Strategy::computeBestMove()
 }
 
 // Add this function to detect game phase
-Strategy::GamePhase Strategy::detectGamePhase() const
+GamePhase Strategy::detectGamePhase() const
 {
     // Count total number of blobs on board
     int total_blobs = 0;
@@ -757,4 +803,17 @@ Strategy::GamePhase Strategy::detectGamePhase() const
     {
         return MID_GAME;
     }
+}
+
+bool Strategy::useOptimizedWeights(ChromosomeWeights* weights) {
+    // Validate pointer
+    if (weights == nullptr) {
+        std::cerr << "Warning: Attempting to set null weights" << std::endl;
+        Strategy::evaluation_weights = nullptr;
+        return false;
+    }
+    
+    // Set weights
+    Strategy::evaluation_weights = weights;
+    return true;
 }
