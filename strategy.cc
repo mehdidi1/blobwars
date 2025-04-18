@@ -187,31 +187,32 @@ Sint32 Strategy::estimateCurrentScoreImproved(Sint32 player) const
 
 
 
+
     case EARLY_GAME:
         // Early game: emphasize position and corners
-        material_weight = 66;
-        corner_weight = 92; // Higher emphasis on corners
-        mobility_weight = 15;
-        capture_weight = 47;
-        frontier_weight = -16; // Less penalty for frontiers early
+        material_weight = 75;
+        corner_weight = 111; // Higher emphasis on corners
+        mobility_weight = -7;
+        capture_weight = 39;
+        frontier_weight = -5; // Less penalty for frontiers early
         break;
 
     case MID_GAME:
         // Mid game: emphasize mobility and potential captures
-        material_weight = 103;
-        corner_weight = 54;
-        mobility_weight = 30; // Higher emphasis on mobility
-        capture_weight = 22; // Higher emphasis on potential captures
-        frontier_weight = -37;
+        material_weight = 111;
+        corner_weight = 29;
+        mobility_weight = 2; // Higher emphasis on mobility
+        capture_weight = 12; // Higher emphasis on potential captures
+        frontier_weight = -36;
         break;
 
     case LATE_GAME:
         // Late game: emphasize material count and reduce mobility importance
-        material_weight = 102; // Higher emphasis on material
-        corner_weight = 78;
-        mobility_weight = 10; // Less emphasis on mobility
-        capture_weight = 33;
-        frontier_weight = -22; // More penalty for vulnerable blobs
+        material_weight = 92; // Higher emphasis on material
+        corner_weight = 31;
+        mobility_weight = 6; // Less emphasis on mobility
+        capture_weight = 22;
+        frontier_weight = -50; // More penalty for vulnerable blobs
         break;
     }
 
@@ -336,11 +337,11 @@ void Strategy::computeBestMove()
     // Select strategy based on the current player
     if (_current_player == 0)
     {
-        alpha_beta_para::computeBestMoveWithScore(*this);
+        alpha_beta::computeBestMoveWithScore(*this);
     }
     else if (_current_player == 1)
     {
-        alpha_beta::computeBestMoveWithScore(*this);
+        alpha_beta_para::computeBestMoveWithScore(*this);
     }
 
     // Calculate elapsed time
