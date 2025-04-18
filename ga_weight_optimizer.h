@@ -72,6 +72,7 @@ public:
     
     const ChromosomeWeights& getBestChromosome() const;
     void saveBestChromosome(const std::string& filename) const;
+    void playGameAgainstNeutral(ChromosomeWeights* weights, bool weights_play_first, int& wins, int& draws, int& losses) const;
 };
 
 #endif // GA_WEIGHT_OPTIMIZER_H

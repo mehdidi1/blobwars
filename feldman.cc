@@ -11,7 +11,7 @@
 namespace feldman
 {
     // Depth limit for the Alpha-Beta algorithm
-    const int MAX_DEPTH = 5;
+    const int MAX_DEPTH = 3;
 
     // Minimum depth for parallelization
     const int PARALLEL_THRESHOLD = 2;

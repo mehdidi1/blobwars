@@ -5,6 +5,8 @@
 // Add these includes if needed
 #include "strategy.h"
 #include "alpha_beta.h"
+#include "alpha_beta_para.h"
+#include "feldman.h"
 
 // Global variables for move saving
 static movement current_saved_move;
@@ -275,76 +277,27 @@ void WeightOptimizer::runTournament() {
         chromosome.wins = chromosome.draws = chromosome.losses = chromosome.games = 0;
     }
     
-    // Each chromosome plays against all others
+    // Each chromosome plays against the neutral algorithm
     for (size_t i = 0; i < population.size(); i++) {
-        for (size_t j = i + 1; j < population.size(); j++) {
-            // Play multiple games between i and j
-            for (int game = 0; game < tournament_games; game++) {
-                // Initialize board state
-                bidiarray<Sint16> blobs;
-                bidiarray<bool> holes;
-                for (int x = 0; x < 8; x++) {
-                    for (int y = 0; y < 8; y++) {
-                        blobs.set(x, y, -1);
-                        holes.set(x, y, false);
-                    }
-                }
-                
-                // Set initial positions
-                blobs.set(0, 0, 0); // Player 0 (Red)
-                blobs.set(0, 7, 0);
-                blobs.set(7, 7, 1); // Player 1 (Blue)
-                blobs.set(7, 0, 1);
-                
-                // Create strategy with proper function pointer for move saving
-                Strategy gameState(blobs, holes, 0, move_saver_function);
-                
-                // Play game
-                playFullGame(gameState, &population[i], &population[j]);
-
-                // Determine winner and update statistics
-                int winner = getWinner(gameState);
-                population[i].games++;
-                population[j].games++;
-
-                if (winner == 0) {
-                    population[i].wins++;
-                    population[j].losses++;
-                    std::cout << "Game " << game << ": Weight set " << i << " beats " << j << std::endl;
-                } else if (winner == 1) {
-                    population[i].losses++;
-                    population[j].wins++;
-                    std::cout << "Game " << game << ": Weight set " << j << " beats " << i << std::endl;
-                } else {
-                    population[i].draws++;
-                    population[j].draws++;
-                    std::cout << "Game " << game << ": Draw between " << i << " and " << j << std::endl;
-                }
-
-                // Play a second game with players swapped for fairness
-                Strategy secondGame(blobs, holes, 0, move_saver_function);
-                playFullGame(secondGame, &population[j], &population[i]);
-
-                // Determine winner of second game
-                winner = getWinner(secondGame);
-                population[i].games++;
-                population[j].games++;
-
-                if (winner == 0) {
-                    population[j].wins++;
-                    population[i].losses++;
-                    std::cout << "Game " << game << " (reversed): Weight set " << j << " beats " << i << std::endl;
-                } else if (winner == 1) {
-                    population[j].losses++;
-                    population[i].wins++;
-                    std::cout << "Game " << game << " (reversed): Weight set " << i << " beats " << j << std::endl;
-                } else {
-                    population[i].draws++;
-                    population[j].draws++;
-                    std::cout << "Game " << game << " (reversed): Draw between " << j << " and " << i << std::endl;
-                }
-            }
+        ChromosomeWeights& weights = population[i];
+        
+        std::cout << "Evaluating weight set " << i << std::endl;
+        
+        // Play multiple games against neutral algorithm
+        for (int game = 0; game < tournament_games; game++) {
+            // Each weight set plays as both first and second player
+            playGameAgainstNeutral(&weights, true, weights.wins, weights.draws, weights.losses);
+            weights.games++;
+            
+            playGameAgainstNeutral(&weights, false, weights.wins, weights.draws, weights.losses);
+            weights.games++;
+            
+            std::cout << "Game " << game << " complete. Current record: " 
+                      << weights.wins << " wins, " << weights.draws << " draws, "
+                      << weights.losses << " losses" << std::endl;
         }
+        
+        std::cout << "Weight set " << i << " final fitness: " << weights.getFitness() << std::endl;
     }
 }
 
@@ -382,6 +335,10 @@ void WeightOptimizer::run() {
     // Initialize population
     initialize();
     
+    // Start timing
+    auto start_time = std::chrono::high_resolution_clock::now();
+    auto last_gen_time = start_time;
+    
     // Run for specified number of generations
     for (int gen = 0; gen < generations; gen++) {
         std::cout << "Generation " << gen + 1 << "/" << generations << std::endl;
@@ -392,15 +349,49 @@ void WeightOptimizer::run() {
         // Print best fitness
         std::cout << "Best fitness: " << getBestChromosome().getFitness() << std::endl;
         
+        // Calculate time statistics
+        auto current_time = std::chrono::high_resolution_clock::now();
+        auto gen_duration = std::chrono::duration_cast<std::chrono::seconds>(
+            current_time - last_gen_time).count();
+        auto total_elapsed = std::chrono::duration_cast<std::chrono::seconds>(
+            current_time - start_time).count();
+        
+        // Estimate remaining time
+        double avg_gen_time = total_elapsed / (gen + 1.0);
+        int remaining_gens = generations - (gen + 1);
+        int estimated_remaining_seconds = avg_gen_time * remaining_gens;
+        
+        // Format and display time information
+        int hours = estimated_remaining_seconds / 3600;
+        int minutes = (estimated_remaining_seconds % 3600) / 60;
+        int seconds = estimated_remaining_seconds % 60;
+        
+        std::cout << "Generation " << gen + 1 << " completed in " << gen_duration << " seconds" << std::endl;
+        std::cout << "Estimated time remaining: " 
+                  << hours << "h " << minutes << "m " << seconds << "s" << std::endl;
+        
+        // Update last generation time
+        last_gen_time = current_time;
+        
         // Create next generation (except for last iteration)
         if (gen < generations - 1) {
             evolve();
         }
     }
     
+    // Calculate total runtime
+    auto end_time = std::chrono::high_resolution_clock::now();
+    auto total_seconds = std::chrono::duration_cast<std::chrono::seconds>(
+        end_time - start_time).count();
+    int hours = total_seconds / 3600;
+    int minutes = (total_seconds % 3600) / 60;
+    int seconds = total_seconds % 60;
+    
     // Save best chromosome
     saveBestChromosome("best_weights.txt");
     std::cout << "Best weights saved to best_weights.txt" << std::endl;
+    std::cout << "Total optimization time: "
+              << hours << "h " << minutes << "m " << seconds << "s" << std::endl;
 }
 
 const ChromosomeWeights& WeightOptimizer::getBestChromosome() const {
@@ -414,4 +405,72 @@ const ChromosomeWeights& WeightOptimizer::getBestChromosome() const {
 
 void WeightOptimizer::saveBestChromosome(const std::string& filename) const {
     getBestChromosome().saveToFile(filename);
+}
+
+void WeightOptimizer::playGameAgainstNeutral(ChromosomeWeights* weights, bool weights_play_first, 
+                                           int& wins, int& draws, int& losses) const {
+    // Initialize board state
+    bidiarray<Sint16> blobs;
+    bidiarray<bool> holes;
+    for (int x = 0; x < 8; x++) {
+        for (int y = 0; y < 8; y++) {
+            blobs.set(x, y, -1);
+            holes.set(x, y, false);
+        }
+    }
+    
+    // Set initial positions
+    blobs.set(0, 0, 0); // Player 0 (Red)
+    blobs.set(1, 1, 0);
+    blobs.set(7, 7, 1); // Player 1 (Blue)
+    blobs.set(6, 6, 1);
+    
+    // Create game with move saver
+    Strategy gameState(blobs, holes, 0, move_saver_function);
+    
+    // Limit moves to prevent infinite games
+    int max_moves = 100;
+    int move_count = 0;
+    
+    // Play until game over or move limit reached
+    while (!isGameOver(gameState) && move_count < max_moves) {
+        // Check if current player has valid moves
+        std::vector<movement> valid_moves;
+        gameState.computeValidMoves(valid_moves);
+        
+        if (valid_moves.empty()) {
+            // No moves available - switch players and continue
+            gameState._current_player = 1 - gameState._current_player;
+            continue;
+        }
+        
+        bool is_weights_turn = (gameState._current_player == 0 && weights_play_first) || 
+                              (gameState._current_player == 1 && !weights_play_first);
+        
+        // Choose algorithm based on whose turn it is
+        if (is_weights_turn) {
+            // Optimized weights player's turn
+            gameState.useOptimizedWeights(weights);
+            alpha_beta_para::computeBestMoveWithScore(gameState);
+        } else {
+            // Neutral algorithm turn - use greedy instead of feldman
+            feldman::computeBestMoveWithScore(gameState);
+        }
+        
+        // Apply the move
+        gameState.applyMove(current_saved_move);
+        move_count++;
+    }
+    
+    // Determine winner
+    int winner = getWinner(gameState);
+    int weights_player = weights_play_first ? 0 : 1;
+    
+    if (winner == -1) {
+        draws++;
+    } else if (winner == weights_player) {
+        wins++;
+    } else {
+        losses++;
+    }
 }

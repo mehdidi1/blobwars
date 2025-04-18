@@ -6,7 +6,7 @@ OBJS_launchComputation = launchStrategy.o strategy.o bidiarray.o shmem.o greedy.
 
 # Better approach: include all the AI modules the optimizer might need
 OBJS_optimizer = optimize_weights.o ga_weight_optimizer.o strategy.o bidiarray.o \
-                 alpha_beta.o alpha_beta_para.o greedy.o minimax.o minimax_para.o
+                 alpha_beta.o alpha_beta_para.o greedy.o minimax.o minimax_para.o feldman.o
 
 LIBS = -lSDL_image -lSDL_ttf -lm `sdl-config --libs` -lSDL_net -lpthread -ltbb
 
