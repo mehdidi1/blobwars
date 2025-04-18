@@ -76,21 +76,8 @@ Sint32 Strategy::estimateCurrentScoreImproved(Sint32 player) const
     Sint32 opponent = 1 - player;
     Sint32 my_blobs = 0, opp_blobs = 0;
     Sint32 my_corner_blobs = 0, opp_corner_blobs = 0;
-    Sint32 my_position_score = 0, opp_position_score = 0;
     Sint32 my_potential_captures = 0;         // Opponent blobs adjacent to mine
     Sint32 my_frontier = 0, opp_frontier = 0; // Blobs adjacent to empty squares
-
-    // --- Positional Weights (Center and Edges) ---
-    // Higher values for center, moderate for edges, low for near-corners
-    static const int position_weights[8][8] = {
-        {8, -1, 6, 4, 4, 6, -1, 8}, // Corners are handled separately
-        {-1, -1, 0, 1, 1, 0, -1, -1},
-        {6, 0, 2, 3, 3, 2, 0, 6},
-        {4, 1, 3, 4, 4, 3, 1, 4},
-        {4, 1, 3, 4, 4, 3, 1, 4},
-        {6, 0, 2, 3, 3, 2, 0, 6},
-        {-1, -1, 0, 1, 1, 0, -1, -1},
-        {8, -1, 6, 4, 4, 6, -1, 8}};
 
     // --- Iterate Board ---
     for (int x = 0; x < 8; ++x)
@@ -105,7 +92,6 @@ Sint32 Strategy::estimateCurrentScoreImproved(Sint32 player) const
                 my_blobs++;
                 if (is_corner)
                     my_corner_blobs++;
-                my_position_score += position_weights[y][x];
 
                 bool is_frontier = false;
                 for (int dx = -1; dx <= 1; ++dx)
@@ -136,7 +122,6 @@ Sint32 Strategy::estimateCurrentScoreImproved(Sint32 player) const
                 opp_blobs++;
                 if (is_corner)
                     opp_corner_blobs++;
-                opp_position_score += position_weights[y][x];
 
                 bool is_frontier = false;
                 for (int dx = -1; dx <= 1; ++dx)
@@ -187,9 +172,6 @@ Sint32 Strategy::estimateCurrentScoreImproved(Sint32 player) const
     }
     Sint32 mobility_score = 20 * (my_moves - opp_moves);
 
-    // 4. Positional Score (using weights table) - Lower weight
-    Sint32 positional_score = 10 * (my_position_score - opp_position_score);
-
     // 5. Potential Capture Score - Lower weight
     Sint32 capture_score = 30 * my_potential_captures; // Only count ours for simplicity
 
@@ -201,7 +183,7 @@ Sint32 Strategy::estimateCurrentScoreImproved(Sint32 player) const
 
     // Phase-specific weights
     Sint32 material_weight, corner_weight, mobility_weight;
-    Sint32 positional_weight, capture_weight, frontier_weight;
+    Sint32 capture_weight, frontier_weight;
 
     // Use optimization weights if available
     if (Strategy::evaluation_weights != nullptr) {
@@ -210,7 +192,6 @@ Sint32 Strategy::estimateCurrentScoreImproved(Sint32 player) const
             material_weight = Strategy::evaluation_weights->early_game.material_weight;
             corner_weight = Strategy::evaluation_weights->early_game.corner_weight;
             mobility_weight = Strategy::evaluation_weights->early_game.mobility_weight;
-            positional_weight = Strategy::evaluation_weights->early_game.positional_weight;
             capture_weight = Strategy::evaluation_weights->early_game.capture_weight;
             frontier_weight = Strategy::evaluation_weights->early_game.frontier_weight;
             break;
@@ -219,7 +200,6 @@ Sint32 Strategy::estimateCurrentScoreImproved(Sint32 player) const
             material_weight = Strategy::evaluation_weights->mid_game.material_weight;
             corner_weight = Strategy::evaluation_weights->mid_game.corner_weight;
             mobility_weight = Strategy::evaluation_weights->mid_game.mobility_weight;
-            positional_weight = Strategy::evaluation_weights->mid_game.positional_weight;
             capture_weight = Strategy::evaluation_weights->mid_game.capture_weight;
             frontier_weight = Strategy::evaluation_weights->mid_game.frontier_weight;
             break;
@@ -228,7 +208,6 @@ Sint32 Strategy::estimateCurrentScoreImproved(Sint32 player) const
             material_weight = Strategy::evaluation_weights->late_game.material_weight;
             corner_weight = Strategy::evaluation_weights->late_game.corner_weight;
             mobility_weight = Strategy::evaluation_weights->late_game.mobility_weight;
-            positional_weight = Strategy::evaluation_weights->late_game.positional_weight;
             capture_weight = Strategy::evaluation_weights->late_game.capture_weight;
             frontier_weight = Strategy::evaluation_weights->late_game.frontier_weight;
             break;
@@ -240,7 +219,6 @@ Sint32 Strategy::estimateCurrentScoreImproved(Sint32 player) const
             material_weight = 80;
             corner_weight = 120; // Higher emphasis on corners
             mobility_weight = 15;
-            positional_weight = 20; // Higher emphasis on position
             capture_weight = 20;
             frontier_weight = -30; // Less penalty for frontiers early
             break;
@@ -250,7 +228,6 @@ Sint32 Strategy::estimateCurrentScoreImproved(Sint32 player) const
             material_weight = 100;
             corner_weight = 70;
             mobility_weight = 30; // Higher emphasis on mobility
-            positional_weight = 10;
             capture_weight = 40; // Higher emphasis on potential captures
             frontier_weight = -40;
             break;
@@ -260,7 +237,6 @@ Sint32 Strategy::estimateCurrentScoreImproved(Sint32 player) const
             material_weight = 120; // Higher emphasis on material
             corner_weight = 60;
             mobility_weight = 10; // Less emphasis on mobility
-            positional_weight = 5;
             capture_weight = 20;
             frontier_weight = -50; // More penalty for vulnerable blobs
             break;
@@ -276,355 +252,13 @@ Sint32 Strategy::estimateCurrentScoreImproved(Sint32 player) const
 
     corner_score = corner_weight * (my_corner_blobs - opp_corner_blobs);
     mobility_score = mobility_weight * (my_moves - opp_moves);
-    positional_score = positional_weight * (my_position_score - opp_position_score);
     capture_score = capture_weight * my_potential_captures;
     frontier_score = frontier_weight * (my_frontier - opp_frontier);
 
     // --- Combine Scores ---
-    Sint32 total_score = material_score + corner_score + mobility_score + positional_score + capture_score + frontier_score + recognizePatterns(player);
+    Sint32 total_score = material_score + corner_score + mobility_score + capture_score + frontier_score;
 
     return total_score;
-}
-
-// Add these pattern recognition functions after your existing evaluation functions
-
-// Pattern recognition scoring function
-Sint32 Strategy::recognizePatterns(Sint32 player) const
-{
-    Sint32 opponent = 1 - player;
-    Sint32 total_pattern_score = 0;
-
-    // Pattern weights
-    Sint32 FORTRESS_WEIGHT, WALL_WEIGHT, INVASION_PLATFORM_WEIGHT, 
-           PINCER_WEIGHT, EXPANSION_HUB_WEIGHT;
-           
-    if (Strategy::evaluation_weights != nullptr) {
-        FORTRESS_WEIGHT = Strategy::evaluation_weights->fortress_weight;
-        WALL_WEIGHT = Strategy::evaluation_weights->wall_weight;
-        INVASION_PLATFORM_WEIGHT = Strategy::evaluation_weights->invasion_platform_weight;
-        PINCER_WEIGHT = Strategy::evaluation_weights->pincer_weight;
-        EXPANSION_HUB_WEIGHT = Strategy::evaluation_weights->expansion_hub_weight;
-    } else {
-        // Default values
-        FORTRESS_WEIGHT = 40;
-        WALL_WEIGHT = 25;
-        INVASION_PLATFORM_WEIGHT = 30;
-        PINCER_WEIGHT = 35;
-        EXPANSION_HUB_WEIGHT = 20;
-    }
-
-    // --- Detect Fortress Formations (2x2 blocks or L-shapes) ---
-    Sint32 my_fortress = 0, opp_fortress = 0;
-    for (int x = 0; x < 7; x++)
-    {
-        for (int y = 0; y < 7; y++)
-        {
-            // Check for 2x2
-            int my_count = 0, opp_count = 0;
-            for (int dx = 0; dx <= 1; dx++)
-            {
-                for (int dy = 0; dy <= 1; dy++)
-                {
-                    if (_blobs.get(x + dx, y + dy) == player)
-                        my_count++;
-                    else if (_blobs.get(x + dx, y + dy) == opponent)
-                        opp_count++;
-                }
-            }
-            if (my_count >= 3)
-                my_fortress++; // 3 or 4 blobs in a 2x2 area
-            if (opp_count >= 3)
-                opp_fortress++;
-
-            // Check for L-shapes (separate from the 2x2 check)
-            if (x < 6 && y < 6)
-            {
-                // L-shape pattern 1 (for player)
-                if (_blobs.get(x, y) == player &&
-                    _blobs.get(x, y + 1) == player &&
-                    _blobs.get(x + 1, y) == player)
-                    my_fortress++;
-
-                // L-shape pattern 2 (for player)
-                if (_blobs.get(x, y) == player &&
-                    _blobs.get(x + 1, y) == player &&
-                    _blobs.get(x + 1, y + 1) == player)
-                    my_fortress++;
-
-                // Similar checks for opponent L-shapes
-                if (_blobs.get(x, y) == opponent &&
-                    _blobs.get(x, y + 1) == opponent &&
-                    _blobs.get(x + 1, y) == opponent)
-                    opp_fortress++;
-
-                if (_blobs.get(x, y) == opponent &&
-                    _blobs.get(x + 1, y) == opponent &&
-                    _blobs.get(x + 1, y + 1) == opponent)
-                    opp_fortress++;
-            }
-        }
-    }
-    total_pattern_score += FORTRESS_WEIGHT * (my_fortress - opp_fortress);
-
-    // --- Detect Wall Formations ---
-    Sint32 my_walls = 0, opp_walls = 0;
-    // Horizontal walls
-    for (int y = 0; y < 8; y++)
-    {
-        int consecutive_mine = 0;
-        int consecutive_opp = 0;
-        for (int x = 0; x < 8; x++)
-        {
-            if (_blobs.get(x, y) == player)
-            {
-                consecutive_mine++;
-                consecutive_opp = 0;
-                if (consecutive_mine >= 3)
-                    my_walls++; // 3+ consecutive blobs form a wall
-            }
-            else if (_blobs.get(x, y) == opponent)
-            {
-                consecutive_opp++;
-                consecutive_mine = 0;
-                if (consecutive_opp >= 3)
-                    opp_walls++;
-            }
-            else
-            {
-                consecutive_mine = consecutive_opp = 0;
-            }
-        }
-    }
-    // Vertical walls (similar logic)
-    for (int x = 0; x < 8; x++)
-    {
-        int consecutive_mine = 0;
-        int consecutive_opp = 0;
-        for (int y = 0; y < 8; y++)
-        {
-            if (_blobs.get(x, y) == player)
-            {
-                consecutive_mine++;
-                consecutive_opp = 0;
-                if (consecutive_mine >= 3)
-                    my_walls++;
-            }
-            else if (_blobs.get(x, y) == opponent)
-            {
-                consecutive_opp++;
-                consecutive_mine = 0;
-                if (consecutive_opp >= 3)
-                    opp_walls++;
-            }
-            else
-            {
-                consecutive_mine = consecutive_opp = 0;
-            }
-        }
-    }
-    total_pattern_score += WALL_WEIGHT * (my_walls - opp_walls);
-
-    // --- Detect Invasion Platforms ---
-    Sint32 my_invasion_platforms = 0, opp_invasion_platforms = 0;
-    for (int x = 0; x < 8; x++)
-    {
-        for (int y = 0; y < 8; y++)
-        {
-            if (_blobs.get(x, y) == player)
-            {
-                int potential_captures = 0;
-                // Check positions at exactly distance 2
-                for (int dx = -2; dx <= 2; dx++)
-                {
-                    for (int dy = -2; dy <= 2; dy++)
-                    {
-                        // Skip if not exactly distance 2
-                        if (std::max(abs(dx), abs(dy)) != 2)
-                            continue;
-
-                        int nx = x + dx, ny = y + dy;
-                        // Check bounds
-                        if (nx < 0 || nx >= 8 || ny < 0 || ny >= 8)
-                            continue;
-
-                        // Check if position is empty and has opponent blobs adjacent
-                        if (_blobs.get(nx, ny) == -1 && !_holes.get(nx, ny))
-                        {
-                            int adjacent_opponents = 0;
-                            for (int adx = -1; adx <= 1; adx++)
-                            {
-                                for (int ady = -1; ady <= 1; ady++)
-                                {
-                                    if (adx == 0 && ady == 0)
-                                        continue;
-                                    int ax = nx + adx, ay = ny + ady;
-                                    if (ax >= 0 && ax < 8 && ay >= 0 && ay < 8)
-                                    {
-                                        if (_blobs.get(ax, ay) == opponent)
-                                            adjacent_opponents++;
-                                    }
-                                }
-                            }
-                            if (adjacent_opponents >= 2)
-                                potential_captures++;
-                        }
-                    }
-                }
-                if (potential_captures > 0)
-                    my_invasion_platforms++;
-            }
-            else if (_blobs.get(x, y) == opponent)
-            {
-                // Similar check for opponent invasion platforms
-                int potential_captures = 0;
-                // Check positions at exactly distance 2
-                for (int dx = -2; dx <= 2; dx++)
-                {
-                    for (int dy = -2; dy <= 2; dy++)
-                    {
-                        if (std::max(abs(dx), abs(dy)) != 2)
-                            continue;
-
-                        int nx = x + dx, ny = y + dy;
-                        if (nx < 0 || nx >= 8 || ny < 0 || ny >= 8)
-                            continue;
-
-                        if (_blobs.get(nx, ny) == -1 && !_holes.get(nx, ny))
-                        {
-                            int adjacent_mine = 0;
-                            for (int adx = -1; adx <= 1; adx++)
-                            {
-                                for (int ady = -1; ady <= 1; ady++)
-                                {
-                                    if (adx == 0 && ady == 0)
-                                        continue;
-                                    int ax = nx + adx, ay = ny + ady;
-                                    if (ax >= 0 && ax < 8 && ay >= 0 && ay < 8)
-                                    {
-                                        if (_blobs.get(ax, ay) == player)
-                                            adjacent_mine++;
-                                    }
-                                }
-                            }
-                            if (adjacent_mine >= 2)
-                                potential_captures++;
-                        }
-                    }
-                }
-                if (potential_captures > 0)
-                    opp_invasion_platforms++;
-            }
-        }
-    }
-    total_pattern_score += INVASION_PLATFORM_WEIGHT * (my_invasion_platforms - opp_invasion_platforms);
-
-    // --- Detect Pincer Patterns ---
-    Sint32 my_pincers = 0, opp_pincers = 0;
-    // Check horizontal pincers
-    for (int y = 0; y < 8; y++)
-    {
-        for (int x = 0; x < 4; x++)
-        { // Changed from x < 6 to x < 4
-            // Check for pattern: [player][empty][opponent][empty][player]
-            if (x + 4 < 8 && // Added bounds check
-                _blobs.get(x, y) == player &&
-                _blobs.get(x + 1, y) == -1 && !_holes.get(x + 1, y) &&
-                _blobs.get(x + 2, y) == opponent &&
-                _blobs.get(x + 3, y) == -1 && !_holes.get(x + 3, y) &&
-                _blobs.get(x + 4, y) == player)
-            {
-                my_pincers++;
-            }
-            // Check for pattern: [opponent][empty][player][empty][opponent]
-            if (x + 4 < 8 && // Added bounds check
-                _blobs.get(x, y) == opponent &&
-                _blobs.get(x + 1, y) == -1 && !_holes.get(x + 1, y) &&
-                _blobs.get(x + 2, y) == player &&
-                _blobs.get(x + 3, y) == -1 && !_holes.get(x + 3, y) &&
-                _blobs.get(x + 4, y) == opponent)
-            {
-                opp_pincers++;
-            }
-        }
-    }
-    // Check vertical pincers (similar logic)
-    for (int x = 0; x < 8; x++)
-    {
-        for (int y = 0; y < 4; y++)
-        {                    // Changed from y < 6 to y < 4
-            if (y + 4 < 8 && // Added bounds check
-                _blobs.get(x, y) == player &&
-                _blobs.get(x, y + 1) == -1 && !_holes.get(x, y + 1) &&
-                _blobs.get(x, y + 2) == opponent &&
-                _blobs.get(x, y + 3) == -1 && !_holes.get(x, y + 3) &&
-                _blobs.get(x, y + 4) == player)
-            {
-                my_pincers++;
-            }
-            if (y + 4 < 8 && // Added bounds check
-                _blobs.get(x, y) == opponent &&
-                _blobs.get(x, y + 1) == -1 && !_holes.get(x, y + 1) &&
-                _blobs.get(x, y + 2) == player &&
-                _blobs.get(x, y + 3) == -1 && !_holes.get(x, y + 3) &&
-                _blobs.get(x, y + 4) == opponent)
-            {
-                opp_pincers++;
-            }
-        }
-    }
-    total_pattern_score += PINCER_WEIGHT * (my_pincers - opp_pincers);
-
-    // --- Count Expansion Hubs ---
-    Sint32 my_hubs = 0, opp_hubs = 0;
-    for (int x = 0; x < 8; x++)
-    {
-        for (int y = 0; y < 8; y++)
-        {
-            if (_blobs.get(x, y) == player)
-            {
-                int empty_adjacent = 0;
-                for (int dx = -1; dx <= 1; dx++)
-                {
-                    for (int dy = -1; dy <= 1; dy++)
-                    {
-                        if (dx == 0 && dy == 0)
-                            continue;
-                        int nx = x + dx, ny = y + dy;
-                        if (nx >= 0 && nx < 8 && ny >= 0 && ny < 8)
-                        {
-                            if (_blobs.get(nx, ny) == -1 && !_holes.get(nx, ny))
-                                empty_adjacent++;
-                        }
-                    }
-                }
-                if (empty_adjacent >= 3)
-                    my_hubs++; // 3+ empty adjacent squares
-            }
-            else if (_blobs.get(x, y) == opponent)
-            {
-                int empty_adjacent = 0;
-                for (int dx = -1; dx <= 1; dx++)
-                {
-                    for (int dy = -1; dy <= 1; dy++)
-                    {
-                        if (dx == 0 && dy == 0)
-                            continue;
-                        int nx = x + dx, ny = y + dy;
-                        if (nx >= 0 && nx < 8 && ny >= 0 && ny < 8)
-                        {
-                            if (_blobs.get(nx, ny) == -1 && !_holes.get(nx, ny))
-                                empty_adjacent++;
-                        }
-                    }
-                }
-                if (empty_adjacent >= 3)
-                    opp_hubs++;
-            }
-        }
-    }
-    total_pattern_score += EXPANSION_HUB_WEIGHT * (my_hubs - opp_hubs);
-
-    return total_pattern_score;
 }
 
 vector<movement> &Strategy::computeValidMoves(vector<movement> &valid_moves) const

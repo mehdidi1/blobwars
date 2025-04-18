@@ -82,7 +82,6 @@ void ChromosomeWeights::initializeDefault() {
     early_game.material_weight = 80;
     early_game.corner_weight = 120;
     early_game.mobility_weight = 15;
-    early_game.positional_weight = 20;
     early_game.capture_weight = 20;
     early_game.frontier_weight = -30;
     
@@ -90,7 +89,6 @@ void ChromosomeWeights::initializeDefault() {
     mid_game.material_weight = 100;
     mid_game.corner_weight = 70;
     mid_game.mobility_weight = 30;
-    mid_game.positional_weight = 10;
     mid_game.capture_weight = 40;
     mid_game.frontier_weight = -40;
     
@@ -98,55 +96,36 @@ void ChromosomeWeights::initializeDefault() {
     late_game.material_weight = 120;
     late_game.corner_weight = 60;
     late_game.mobility_weight = 10;
-    late_game.positional_weight = 5;
     late_game.capture_weight = 20;
     late_game.frontier_weight = -50;
-    
-    // Pattern weights
-    fortress_weight = 40;
-    wall_weight = 25;
-    invasion_platform_weight = 30;
-    pincer_weight = 35;
-    expansion_hub_weight = 20;
+
     
     // Reset fitness
     wins = draws = losses = games = 0;
 }
 
-void ChromosomeWeights::randomize(std::mt19937& rng, int variation_range) {
-    // Start with defaults
-    initializeDefault();
+void ChromosomeWeights::randomize(std::mt19937& rng, int range) {
+    // Initialize with random values for all weights
+    std::uniform_int_distribution<Sint32> dist(-range, range);
     
-    // Create distribution for variations
-    std::uniform_int_distribution<int> variation(-variation_range, variation_range);
+    // Phase weights
+    early_game.material_weight = 80 + dist(rng);
+    early_game.corner_weight = 120 + dist(rng);
+    early_game.mobility_weight = 15 + dist(rng);
+    early_game.capture_weight = 20 + dist(rng);
+    early_game.frontier_weight = -30 + dist(rng);
     
-    // Apply random variations to each weight
-    early_game.material_weight += variation(rng);
-    early_game.corner_weight += variation(rng);
-    early_game.mobility_weight += variation(rng);
-    early_game.positional_weight += variation(rng);
-    early_game.capture_weight += variation(rng);
-    early_game.frontier_weight += variation(rng);
+    mid_game.material_weight = 100 + dist(rng);
+    mid_game.corner_weight = 70 + dist(rng);
+    mid_game.mobility_weight = 30 + dist(rng);
+    mid_game.capture_weight = 40 + dist(rng);
+    mid_game.frontier_weight = -40 + dist(rng);
     
-    mid_game.material_weight += variation(rng);
-    mid_game.corner_weight += variation(rng);
-    mid_game.mobility_weight += variation(rng);
-    mid_game.positional_weight += variation(rng);
-    mid_game.capture_weight += variation(rng);
-    mid_game.frontier_weight += variation(rng);
-    
-    late_game.material_weight += variation(rng);
-    late_game.corner_weight += variation(rng);
-    late_game.mobility_weight += variation(rng);
-    late_game.positional_weight += variation(rng);
-    late_game.capture_weight += variation(rng);
-    late_game.frontier_weight += variation(rng);
-    
-    fortress_weight += variation(rng);
-    wall_weight += variation(rng);
-    invasion_platform_weight += variation(rng);
-    pincer_weight += variation(rng);
-    expansion_hub_weight += variation(rng);
+    late_game.material_weight = 120 + dist(rng);
+    late_game.corner_weight = 60 + dist(rng);
+    late_game.mobility_weight = 10 + dist(rng);
+    late_game.capture_weight = 20 + dist(rng);
+    late_game.frontier_weight = -50 + dist(rng);
 }
 
 ChromosomeWeights ChromosomeWeights::crossover(
@@ -167,8 +146,6 @@ ChromosomeWeights ChromosomeWeights::crossover(
         dist(rng) ? parent1.early_game.corner_weight : parent2.early_game.corner_weight;
     child.early_game.mobility_weight = 
         dist(rng) ? parent1.early_game.mobility_weight : parent2.early_game.mobility_weight;
-    child.early_game.positional_weight = 
-        dist(rng) ? parent1.early_game.positional_weight : parent2.early_game.positional_weight;
     child.early_game.capture_weight = 
         dist(rng) ? parent1.early_game.capture_weight : parent2.early_game.capture_weight;
     child.early_game.frontier_weight = 
@@ -181,8 +158,6 @@ ChromosomeWeights ChromosomeWeights::crossover(
         dist(rng) ? parent1.mid_game.corner_weight : parent2.mid_game.corner_weight;
     child.mid_game.mobility_weight = 
         dist(rng) ? parent1.mid_game.mobility_weight : parent2.mid_game.mobility_weight;
-    child.mid_game.positional_weight = 
-        dist(rng) ? parent1.mid_game.positional_weight : parent2.mid_game.positional_weight;
     child.mid_game.capture_weight = 
         dist(rng) ? parent1.mid_game.capture_weight : parent2.mid_game.capture_weight;
     child.mid_game.frontier_weight = 
@@ -195,24 +170,10 @@ ChromosomeWeights ChromosomeWeights::crossover(
         dist(rng) ? parent1.late_game.corner_weight : parent2.late_game.corner_weight;
     child.late_game.mobility_weight = 
         dist(rng) ? parent1.late_game.mobility_weight : parent2.late_game.mobility_weight;
-    child.late_game.positional_weight = 
-        dist(rng) ? parent1.late_game.positional_weight : parent2.late_game.positional_weight;
     child.late_game.capture_weight = 
         dist(rng) ? parent1.late_game.capture_weight : parent2.late_game.capture_weight;
     child.late_game.frontier_weight = 
         dist(rng) ? parent1.late_game.frontier_weight : parent2.late_game.frontier_weight;
-    
-    // Pattern weights
-    child.fortress_weight = 
-        dist(rng) ? parent1.fortress_weight : parent2.fortress_weight;
-    child.wall_weight = 
-        dist(rng) ? parent1.wall_weight : parent2.wall_weight;
-    child.invasion_platform_weight = 
-        dist(rng) ? parent1.invasion_platform_weight : parent2.invasion_platform_weight;
-    child.pincer_weight = 
-        dist(rng) ? parent1.pincer_weight : parent2.pincer_weight;
-    child.expansion_hub_weight = 
-        dist(rng) ? parent1.expansion_hub_weight : parent2.expansion_hub_weight;
     
     // Reset fitness
     child.wins = child.draws = child.losses = child.games = 0;
@@ -231,29 +192,20 @@ void ChromosomeWeights::mutate(std::mt19937& rng, int mutation_chance, int mutat
     if (chance(rng) <= mutation_chance) early_game.material_weight += amount(rng);
     if (chance(rng) <= mutation_chance) early_game.corner_weight += amount(rng);
     if (chance(rng) <= mutation_chance) early_game.mobility_weight += amount(rng);
-    if (chance(rng) <= mutation_chance) early_game.positional_weight += amount(rng);
     if (chance(rng) <= mutation_chance) early_game.capture_weight += amount(rng);
     if (chance(rng) <= mutation_chance) early_game.frontier_weight += amount(rng);
     
     if (chance(rng) <= mutation_chance) mid_game.material_weight += amount(rng);
     if (chance(rng) <= mutation_chance) mid_game.corner_weight += amount(rng);
     if (chance(rng) <= mutation_chance) mid_game.mobility_weight += amount(rng);
-    if (chance(rng) <= mutation_chance) mid_game.positional_weight += amount(rng);
     if (chance(rng) <= mutation_chance) mid_game.capture_weight += amount(rng);
     if (chance(rng) <= mutation_chance) mid_game.frontier_weight += amount(rng);
     
     if (chance(rng) <= mutation_chance) late_game.material_weight += amount(rng);
     if (chance(rng) <= mutation_chance) late_game.corner_weight += amount(rng);
     if (chance(rng) <= mutation_chance) late_game.mobility_weight += amount(rng);
-    if (chance(rng) <= mutation_chance) late_game.positional_weight += amount(rng);
     if (chance(rng) <= mutation_chance) late_game.capture_weight += amount(rng);
     if (chance(rng) <= mutation_chance) late_game.frontier_weight += amount(rng);
-    
-    if (chance(rng) <= mutation_chance) fortress_weight += amount(rng);
-    if (chance(rng) <= mutation_chance) wall_weight += amount(rng);
-    if (chance(rng) <= mutation_chance) invasion_platform_weight += amount(rng);
-    if (chance(rng) <= mutation_chance) pincer_weight += amount(rng);
-    if (chance(rng) <= mutation_chance) expansion_hub_weight += amount(rng);
 }
 
 bool ChromosomeWeights::saveToFile(const std::string& filename) const {
@@ -261,20 +213,14 @@ bool ChromosomeWeights::saveToFile(const std::string& filename) const {
     if (!file.is_open()) return false;
     
     // Write all weights to file
-    file << early_game.material_weight << " " << early_game.corner_weight << " " 
-         << early_game.mobility_weight << " " << early_game.positional_weight << " "
+    file << early_game.material_weight << " " << early_game.corner_weight << " "  << early_game.mobility_weight << " "
          << early_game.capture_weight << " " << early_game.frontier_weight << "\n";
     
-    file << mid_game.material_weight << " " << mid_game.corner_weight << " " 
-         << mid_game.mobility_weight << " " << mid_game.positional_weight << " "
+    file << mid_game.material_weight << " " << mid_game.corner_weight << " " << mid_game.mobility_weight << " "
          << mid_game.capture_weight << " " << mid_game.frontier_weight << "\n";
     
-    file << late_game.material_weight << " " << late_game.corner_weight << " " 
-         << late_game.mobility_weight << " " << late_game.positional_weight << " "
+    file << late_game.material_weight << " " << late_game.corner_weight << " " << late_game.mobility_weight << " "
          << late_game.capture_weight << " " << late_game.frontier_weight << "\n";
-    
-    file << fortress_weight << " " << wall_weight << " " << invasion_platform_weight << " "
-         << pincer_weight << " " << expansion_hub_weight << "\n";
     
     file << wins << " " << draws << " " << losses << " " << games << "\n";
     
@@ -287,19 +233,13 @@ bool ChromosomeWeights::loadFromFile(const std::string& filename) {
     if (!file.is_open()) return false;
     
     file >> early_game.material_weight >> early_game.corner_weight 
-         >> early_game.mobility_weight >> early_game.positional_weight
          >> early_game.capture_weight >> early_game.frontier_weight;
     
     file >> mid_game.material_weight >> mid_game.corner_weight 
-         >> mid_game.mobility_weight >> mid_game.positional_weight
          >> mid_game.capture_weight >> mid_game.frontier_weight;
     
     file >> late_game.material_weight >> late_game.corner_weight 
-         >> late_game.mobility_weight >> late_game.positional_weight
          >> late_game.capture_weight >> late_game.frontier_weight;
-    
-    file >> fortress_weight >> wall_weight >> invasion_platform_weight
-         >> pincer_weight >> expansion_hub_weight;
     
     file >> wins >> draws >> losses >> games;
     
@@ -352,9 +292,9 @@ void WeightOptimizer::runTournament() {
                 
                 // Set initial positions
                 blobs.set(0, 0, 0); // Player 0 (Red)
-                blobs.set(1, 1, 0);
+                blobs.set(0, 7, 0);
                 blobs.set(7, 7, 1); // Player 1 (Blue)
-                blobs.set(6, 6, 1);
+                blobs.set(7, 0, 1);
                 
                 // Create strategy with proper function pointer for move saving
                 Strategy gameState(blobs, holes, 0, move_saver_function);

@@ -14,17 +14,9 @@ struct ChromosomeWeights {
         Sint32 material_weight;
         Sint32 corner_weight;
         Sint32 mobility_weight;
-        Sint32 positional_weight;
         Sint32 capture_weight;
         Sint32 frontier_weight;
     };
-    
-    // Pattern weights
-    Sint32 fortress_weight;
-    Sint32 wall_weight;
-    Sint32 invasion_platform_weight;
-    Sint32 pincer_weight;
-    Sint32 expansion_hub_weight;
     
     // Phase-specific weights
     PhaseWeights early_game;
