@@ -1,6 +1,79 @@
 #include "ga_weight_optimizer.h"
 #include <algorithm>
 #include <chrono>
+#include <iostream>
+// Add these includes if needed
+#include "strategy.h"
+#include "alpha_beta.h"
+
+// Global variables for move saving
+static movement current_saved_move;
+
+static void move_saver_function(movement& mv) {
+    current_saved_move = mv;
+}
+
+// Game simulation helper functions
+bool isGameOver(Strategy& strategy) {
+    // Game is over when no valid moves for either player
+    std::vector<movement> moves;
+    
+    // Check player 0
+    Strategy tmp = strategy;
+    tmp._current_player = 0;
+    tmp.computeValidMoves(moves);
+    bool p0_can_move = !moves.empty();
+    
+    // Check player 1
+    moves.clear();
+    tmp._current_player = 1;
+    tmp.computeValidMoves(moves);
+    bool p1_can_move = !moves.empty();
+    
+    return !p0_can_move && !p1_can_move;
+}
+
+int getWinner(Strategy& strategy) {
+    int p0_score = 0, p1_score = 0;
+    
+    // Count blobs
+    for (int x = 0; x < 8; x++) {
+        for (int y = 0; y < 8; y++) {
+            if (strategy._blobs.get(x, y) == 0)
+                p0_score++;
+            else if (strategy._blobs.get(x, y) == 1)
+                p1_score++;
+        }
+    }
+    
+    if (p0_score > p1_score) return 0;
+    else if (p1_score > p0_score) return 1;
+    else return -1; // Draw
+}
+
+void playFullGame(Strategy& strategy, ChromosomeWeights* weights0, ChromosomeWeights* weights1) {
+    // Limit moves to prevent infinite games
+    int max_moves = 100;
+    int move_count = 0;
+    
+    // Play until game over or move limit reached
+    while (!isGameOver(strategy) && move_count < max_moves) {
+        // Set weights for current player
+        if (strategy._current_player == 0) {
+            strategy.useOptimizedWeights(weights0);
+        } else {
+            strategy.useOptimizedWeights(weights1);
+        }
+        
+        // Compute and apply best move
+        strategy.computeBestMove();
+        
+        // Apply the move that was saved by the move_saver_function
+        strategy.applyMove(current_saved_move);
+        
+        move_count++;
+    }
+}
 
 void ChromosomeWeights::initializeDefault() {
     // Initialize with current weights from the strategy.cc file
@@ -267,26 +340,68 @@ void WeightOptimizer::runTournament() {
         for (size_t j = i + 1; j < population.size(); j++) {
             // Play multiple games between i and j
             for (int game = 0; game < tournament_games; game++) {
-                // TODO: Implement actual game logic here
-                // This would involve modifying Strategy to use the weights from 
-                // population[i] and population[j], then running a game
+                // Initialize board state
+                bidiarray<Sint16> blobs;
+                bidiarray<bool> holes;
+                for (int x = 0; x < 8; x++) {
+                    for (int y = 0; y < 8; y++) {
+                        blobs.set(x, y, -1);
+                        holes.set(x, y, false);
+                    }
+                }
                 
-                // For now, we'll simulate with random outcomes
-                std::uniform_int_distribution<int> result(0, 2); // 0=i wins, 1=draw, 2=j wins
-                int outcome = result(rng);
+                // Set initial positions
+                blobs.set(0, 0, 0); // Player 0 (Red)
+                blobs.set(1, 1, 0);
+                blobs.set(7, 7, 1); // Player 1 (Blue)
+                blobs.set(6, 6, 1);
                 
+                // Create strategy with proper function pointer for move saving
+                Strategy gameState(blobs, holes, 0, move_saver_function);
+                
+                // Play game
+                playFullGame(gameState, &population[i], &population[j]);
+
+                // Determine winner and update statistics
+                int winner = getWinner(gameState);
                 population[i].games++;
                 population[j].games++;
-                
-                if (outcome == 0) {
+
+                if (winner == 0) {
                     population[i].wins++;
                     population[j].losses++;
-                } else if (outcome == 1) {
-                    population[i].draws++;
-                    population[j].draws++;
-                } else {
+                    std::cout << "Game " << game << ": Weight set " << i << " beats " << j << std::endl;
+                } else if (winner == 1) {
                     population[i].losses++;
                     population[j].wins++;
+                    std::cout << "Game " << game << ": Weight set " << j << " beats " << i << std::endl;
+                } else {
+                    population[i].draws++;
+                    population[j].draws++;
+                    std::cout << "Game " << game << ": Draw between " << i << " and " << j << std::endl;
+                }
+
+                // Play a second game with players swapped for fairness
+                Strategy secondGame(blobs, holes, 0, move_saver_function);
+                playFullGame(secondGame, &population[j], &population[i]);
+
+                // Determine winner of second game
+                winner = getWinner(secondGame);
+                population[i].games++;
+                population[j].games++;
+
+                if (winner == 0) {
+                    population[j].wins++;
+                    population[i].losses++;
+                    std::cout << "Game " << game << " (reversed): Weight set " << j << " beats " << i << std::endl;
+                } else if (winner == 1) {
+                    population[j].losses++;
+                    population[i].wins++;
+                    std::cout << "Game " << game << " (reversed): Weight set " << i << " beats " << j << std::endl;
+                } else {
+                    population[i].draws++;
+                    population[j].draws++;
+                    std::cout << "Game " << game << " (reversed): Draw between " << j << " and " << i << std::endl;
                 }
             }
         }

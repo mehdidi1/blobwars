@@ -729,11 +729,11 @@ void Strategy::computeBestMove()
     // Select strategy based on the current player
     if (_current_player == 0)
     {
-        alpha_beta::computeBestMoveWithScore(*this);
+        alpha_beta_para::computeBestMoveWithScore(*this);
     }
     else if (_current_player == 1)
     {
-        alpha_beta::computeBestMoveWithScore(*this);
+        alpha_beta_para::computeBestMoveWithScore(*this);
     }
 
     // Calculate elapsed time
