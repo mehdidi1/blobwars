@@ -11,7 +11,7 @@
 namespace alpha_beta_para {
 
     // Depth limit for the Alpha-Beta algorithm
-    const int MAX_DEPTH = 4;
+    const int MAX_DEPTH = 5;
 
     // Alpha-Beta pruning recursive function
     Sint32 alphabeta(Strategy& strategy, int depth, Sint32 alpha, Sint32 beta, bool maximizingPlayer, Sint32 root_player) {

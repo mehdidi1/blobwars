@@ -56,6 +56,18 @@ public:
      */
     Sint32 estimateCurrentScore(Sint32 player) const;
 
+    enum GamePhase {
+        EARLY_GAME,
+        MID_GAME,
+        LATE_GAME
+    };
+    
+    GamePhase detectGamePhase() const;
+
+    Sint32 estimateCurrentScoreImproved(Sint32 player) const;
+
+    Sint32 recognizePatterns(Sint32 player) const;
+
     /**
      * Find the best move.
      */

@@ -9,6 +9,7 @@
 #include "feldman.h"
 #include "final_ai.h"
 #include "test.h"
+#include <vector> // Make sure vector is included
 
 void Strategy::applyMove(const movement &mv)
 {
@@ -65,6 +66,172 @@ Sint32 Strategy::estimateCurrentScore(Sint32 player) const
 
     return player0_score - player1_score;
 }
+
+Sint32 Strategy::estimateCurrentScoreImproved(Sint32 player) const
+{
+    Sint32 opponent = 1 - player;
+    Sint32 my_blobs = 0, opp_blobs = 0;
+    Sint32 my_corner_blobs = 0, opp_corner_blobs = 0;
+    Sint32 my_potential_captures = 0;         // Opponent blobs adjacent to mine
+    Sint32 my_frontier = 0, opp_frontier = 0; // Blobs adjacent to empty squares
+
+    // --- Iterate Board ---
+    for (int x = 0; x < 8; ++x)
+    {
+        for (int y = 0; y < 8; ++y)
+        {
+            Sint32 blob_owner = _blobs.get(x, y);
+            bool is_corner = (x == 0 || x == 7) && (y == 0 || y == 7);
+
+            if (blob_owner == player)
+            {
+                my_blobs++;
+                if (is_corner)
+                    my_corner_blobs++;
+
+                bool is_frontier = false;
+                for (int dx = -1; dx <= 1; ++dx)
+                {
+                    for (int dy = -1; dy <= 1; ++dy)
+                    {
+                        if (dx == 0 && dy == 0)
+                            continue;
+                        int nx = x + dx, ny = y + dy;
+                        if (nx >= 0 && nx < 8 && ny >= 0 && ny < 8)
+                        {
+                            if (_blobs.get(nx, ny) == opponent)
+                            {
+                                my_potential_captures++;
+                            }
+                            else if (_blobs.get(nx, ny) == -1 && !_holes.get(nx, ny))
+                            {
+                                is_frontier = true; // Adjacent to empty non-hole
+                            }
+                        }
+                    }
+                }
+                if (is_frontier)
+                    my_frontier++;
+            }
+            else if (blob_owner == opponent)
+            {
+                opp_blobs++;
+                if (is_corner)
+                    opp_corner_blobs++;
+
+                bool is_frontier = false;
+                for (int dx = -1; dx <= 1; ++dx)
+                {
+                    for (int dy = -1; dy <= 1; ++dy)
+                    {
+                        if (dx == 0 && dy == 0)
+                            continue;
+                        int nx = x + dx, ny = y + dy;
+                        if (nx >= 0 && nx < 8 && ny >= 0 && ny < 8)
+                        {
+                            if (_blobs.get(nx, ny) == -1 && !_holes.get(nx, ny))
+                            {
+                                is_frontier = true;
+                            }
+                        }
+                    }
+                }
+                if (is_frontier)
+                    opp_frontier++;
+            }
+        }
+    }
+
+    // --- Calculate Scores ---
+    // 1. Material Score (Blob difference) - High weight
+    Sint32 material_score = 100 * (my_blobs - opp_blobs);
+    if (my_blobs == 0)
+        return -99999; // Loss condition
+    if (opp_blobs == 0)
+        return 99999; // Win condition
+
+    // 2. Corner Score - Very high weight
+    Sint32 corner_score = 50 * (my_corner_blobs - opp_corner_blobs);
+
+    // 3. Mobility Score - Moderate weight
+    Sint32 my_moves = 0, opp_moves = 0;
+    {
+        Strategy tmp = *this;
+        vector<movement> moves;
+        tmp._current_player = player;
+        tmp.computeValidMoves(moves);
+        my_moves = moves.size();
+        moves.clear();
+        tmp._current_player = opponent;
+        tmp.computeValidMoves(moves);
+        opp_moves = moves.size();
+    }
+    Sint32 mobility_score = 20 * (my_moves - opp_moves);
+
+
+    // 5. Potential Capture Score - Lower weight
+    Sint32 capture_score = 30 * my_potential_captures; // Only count ours for simplicity
+
+    // 6. Frontier Score (Penalty for vulnerable blobs) - Lower negative weight
+    Sint32 frontier_score = -50 * (my_frontier - opp_frontier);
+
+    // Determine current game phase
+    GamePhase phase = detectGamePhase();
+
+    // Phase-specific weights
+    Sint32 material_weight, corner_weight, mobility_weight;
+    Sint32 capture_weight, frontier_weight;
+
+    switch (phase)
+    {
+
+
+    case EARLY_GAME:
+        // Early game: emphasize position and corners
+        material_weight = 84;
+        corner_weight = 121; // Higher emphasis on corners
+        mobility_weight = -6;
+        capture_weight = -10;
+        frontier_weight = -20; // Less penalty for frontiers early
+        break;
+
+    case MID_GAME:
+        // Mid game: emphasize mobility and potential captures
+        material_weight = 129;
+        corner_weight = 40;
+        mobility_weight = 5; // Higher emphasis on mobility
+        capture_weight = 10; // Higher emphasis on potential captures
+        frontier_weight = -86;
+        break;
+
+    case LATE_GAME:
+        // Late game: emphasize material count and reduce mobility importance
+        material_weight = 151; // Higher emphasis on material
+        corner_weight = 81;
+        mobility_weight = 5; // Less emphasis on mobility
+        capture_weight = 12;
+        frontier_weight = -55; // More penalty for vulnerable blobs
+        break;
+    }
+
+    // Apply phase-specific weights to scores
+    material_score = material_weight * (my_blobs - opp_blobs);
+    if (my_blobs == 0)
+        return -99999; // Loss condition
+    if (opp_blobs == 0)
+        return 99999; // Win condition
+
+    corner_score = corner_weight * (my_corner_blobs - opp_corner_blobs);
+    mobility_score = mobility_weight * (my_moves - opp_moves);
+    capture_score = capture_weight * my_potential_captures;
+    frontier_score = frontier_weight * (my_frontier - opp_frontier);
+
+    // --- Combine Scores ---
+    Sint32 total_score = material_score + corner_score + mobility_score + capture_score + frontier_score ;
+
+    return total_score;
+}
+
 
 vector<movement> &Strategy::computeValidMoves(vector<movement> &valid_moves) const
 {
@@ -147,19 +314,20 @@ void Strategy::computeBestMove()
 {
     // Player 1 is blue
     // Player 0 is red
-    
+
     // Read previous statistics - separate for each player
     double total_time_p0 = 0.0;
     int total_moves_p0 = 0;
     double total_time_p1 = 0.0;
     int total_moves_p1 = 0;
-    
+
     std::ifstream stats_file("move_stats.txt");
-    if (stats_file.good()) {
+    if (stats_file.good())
+    {
         stats_file >> total_time_p0 >> total_moves_p0 >> total_time_p1 >> total_moves_p1;
         stats_file.close();
     }
-    
+
     // Add timing code
     struct timeval start_time, end_time;
     gettimeofday(&start_time, NULL);
@@ -167,27 +335,30 @@ void Strategy::computeBestMove()
     // Select strategy based on the current player
     if (_current_player == 0)
     {
-        alpha_beta_para::computeBestMoveWithScore(*this);
+        alpha_beta::computeBestMoveWithScore(*this);
     }
     else if (_current_player == 1)
     {
-        final_ai::computeBestMoveWithScore(*this);
+        alpha_beta_para::computeBestMoveWithScore(*this);
     }
-    
+
     // Calculate elapsed time
     gettimeofday(&end_time, NULL);
     double elapsed = ((end_time.tv_sec - start_time.tv_sec) * 1000.0) +
                      ((end_time.tv_usec - start_time.tv_usec) / 1000.0);
-    
+
     // Update metrics for the specific player
-    if (_current_player == 0) {
+    if (_current_player == 0)
+    {
         total_time_p0 += elapsed;
         total_moves_p0++;
         double avg_time = total_time_p0 / total_moves_p0;
         std::cout << "Player 0 (Red) move took " << elapsed << " ms" << std::endl;
         std::cout << "Player 0 average time: " << avg_time << " ms"
                   << " (over " << total_moves_p0 << " moves)" << std::endl;
-    } else {
+    }
+    else
+    {
         total_time_p1 += elapsed;
         total_moves_p1++;
         double avg_time = total_time_p1 / total_moves_p1;
@@ -195,10 +366,47 @@ void Strategy::computeBestMove()
         std::cout << "Player 1 average time: " << avg_time << " ms"
                   << " (over " << total_moves_p1 << " moves)" << std::endl;
     }
-    
+
     // Save updated statistics for both players
     std::ofstream stats_out("move_stats.txt");
-    stats_out << total_time_p0 << " " << total_moves_p0 << " " 
+    stats_out << total_time_p0 << " " << total_moves_p0 << " "
               << total_time_p1 << " " << total_moves_p1;
     stats_out.close();
+}
+
+// Add this function to detect game phase
+Strategy::GamePhase Strategy::detectGamePhase() const
+{
+    // Count total number of blobs on board
+    int total_blobs = 0;
+    int empty_spaces = 0;
+
+    for (int x = 0; x < 8; x++)
+    {
+        for (int y = 0; y < 8; y++)
+        {
+            if (_blobs.get(x, y) != -1)
+            {
+                total_blobs++;
+            }
+            else if (!_holes.get(x, y))
+            {
+                empty_spaces++;
+            }
+        }
+    }
+
+    // Determine phase based on board occupation
+    if (total_blobs <= 16)
+    {
+        return EARLY_GAME;
+    }
+    else if (total_blobs >= 45)
+    {
+        return LATE_GAME;
+    }
+    else
+    {
+        return MID_GAME;
+    }
 }
