@@ -79,27 +79,28 @@ void playFullGame(Strategy& strategy, ChromosomeWeights* weights0, ChromosomeWei
 
 void ChromosomeWeights::initializeDefault() {
     // Initialize with current weights from the strategy.cc file
-    
+
+
     // Early game
-    early_game.material_weight = 80;
-    early_game.corner_weight = 120;
-    early_game.mobility_weight = 15;
-    early_game.capture_weight = 20;
-    early_game.frontier_weight = -30;
+    early_game.material_weight = 84;
+    early_game.corner_weight = 121;
+    early_game.mobility_weight = -6;
+    early_game.capture_weight = -10;
+    early_game.frontier_weight = -20;
     
     // Mid game
-    mid_game.material_weight = 100;
-    mid_game.corner_weight = 70;
-    mid_game.mobility_weight = 30;
-    mid_game.capture_weight = 40;
-    mid_game.frontier_weight = -40;
+    mid_game.material_weight = 129;
+    mid_game.corner_weight = 40;
+    mid_game.mobility_weight = 5;
+    mid_game.capture_weight = 10;
+    mid_game.frontier_weight = -86;
     
     // Late game
-    late_game.material_weight = 120;
-    late_game.corner_weight = 60;
-    late_game.mobility_weight = 10;
-    late_game.capture_weight = 20;
-    late_game.frontier_weight = -50;
+    late_game.material_weight = 151;
+    late_game.corner_weight = 81;
+    late_game.mobility_weight = 5;
+    late_game.capture_weight = 12;
+    late_game.frontier_weight = -55;
 
     
     // Reset fitness
@@ -234,13 +235,13 @@ bool ChromosomeWeights::loadFromFile(const std::string& filename) {
     std::ifstream file(filename);
     if (!file.is_open()) return false;
     
-    file >> early_game.material_weight >> early_game.corner_weight 
+    file >> early_game.material_weight >> early_game.corner_weight >> early_game.mobility_weight
          >> early_game.capture_weight >> early_game.frontier_weight;
     
-    file >> mid_game.material_weight >> mid_game.corner_weight 
+    file >> mid_game.material_weight >> mid_game.corner_weight >> mid_game.mobility_weight
          >> mid_game.capture_weight >> mid_game.frontier_weight;
     
-    file >> late_game.material_weight >> late_game.corner_weight 
+    file >> late_game.material_weight >> late_game.corner_weight >> late_game.mobility_weight
          >> late_game.capture_weight >> late_game.frontier_weight;
     
     file >> wins >> draws >> losses >> games;
