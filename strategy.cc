@@ -188,29 +188,29 @@ Sint32 Strategy::estimateCurrentScoreImproved(Sint32 player) const
 
     case EARLY_GAME:
         // Early game: emphasize position and corners
-        material_weight = 84;
-        corner_weight = 121; // Higher emphasis on corners
-        mobility_weight = -6;
-        capture_weight = -10;
-        frontier_weight = -20; // Less penalty for frontiers early
+        material_weight = 120;
+        corner_weight = 129; // Higher emphasis on corners
+        mobility_weight = 23;
+        capture_weight = 13;
+        frontier_weight = -5; // Less penalty for frontiers early
         break;
 
     case MID_GAME:
         // Mid game: emphasize mobility and potential captures
-        material_weight = 129;
-        corner_weight = 40;
+        material_weight = 97;
+        corner_weight = 84;
         mobility_weight = 5; // Higher emphasis on mobility
-        capture_weight = 10; // Higher emphasis on potential captures
-        frontier_weight = -86;
+        capture_weight = 3; // Higher emphasis on potential captures
+        frontier_weight = -50;
         break;
 
     case LATE_GAME:
         // Late game: emphasize material count and reduce mobility importance
-        material_weight = 151; // Higher emphasis on material
-        corner_weight = 81;
-        mobility_weight = 5; // Less emphasis on mobility
-        capture_weight = 12;
-        frontier_weight = -55; // More penalty for vulnerable blobs
+        material_weight = 167; // Higher emphasis on material
+        corner_weight = 74;
+        mobility_weight = 9; // Less emphasis on mobility
+        capture_weight = 6;
+        frontier_weight = -29; // More penalty for vulnerable blobs
         break;
     }
 
