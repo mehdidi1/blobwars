@@ -422,9 +422,9 @@ void WeightOptimizer::playGameAgainstNeutral(ChromosomeWeights* weights, bool we
     
     // Set initial positions
     blobs.set(0, 0, 0); // Player 0 (Red)
-    blobs.set(1, 1, 0);
+    blobs.set(0, 7, 0);
     blobs.set(7, 7, 1); // Player 1 (Blue)
-    blobs.set(6, 6, 1);
+    blobs.set(7, 0, 1);
     
     // Create game with move saver
     Strategy gameState(blobs, holes, 0, move_saver_function);
