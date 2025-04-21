@@ -188,29 +188,29 @@ Sint32 Strategy::estimateCurrentScoreImproved(Sint32 player) const
 
     case EARLY_GAME:
         // Early game: emphasize position and corners
-        material_weight = 120;
-        corner_weight = 129; // Higher emphasis on corners
-        mobility_weight = 23;
-        capture_weight = 13;
-        frontier_weight = -5; // Less penalty for frontiers early
+        material_weight = 99;
+        corner_weight = 118; // Higher emphasis on corners
+        mobility_weight = 19;
+        capture_weight = 33;
+        frontier_weight = -7; // Less penalty for frontiers early
         break;
 
     case MID_GAME:
         // Mid game: emphasize mobility and potential captures
-        material_weight = 97;
-        corner_weight = 84;
-        mobility_weight = 5; // Higher emphasis on mobility
-        capture_weight = 3; // Higher emphasis on potential captures
-        frontier_weight = -50;
+        material_weight = 102;
+        corner_weight = 77;
+        mobility_weight = 1; // Higher emphasis on mobility
+        capture_weight = -7; // Higher emphasis on potential captures
+        frontier_weight = -77;
         break;
 
     case LATE_GAME:
         // Late game: emphasize material count and reduce mobility importance
-        material_weight = 167; // Higher emphasis on material
-        corner_weight = 74;
-        mobility_weight = 9; // Less emphasis on mobility
-        capture_weight = 6;
-        frontier_weight = -29; // More penalty for vulnerable blobs
+        material_weight = 154; // Higher emphasis on material
+        corner_weight = 68;
+        mobility_weight = 4; // Less emphasis on mobility
+        capture_weight = -5;
+        frontier_weight = -68; // More penalty for vulnerable blobs
         break;
     }
 
@@ -335,7 +335,7 @@ void Strategy::computeBestMove()
     // Select strategy based on the current player
     if (_current_player == 0)
     {
-        test::computeBestMoveWithScore(*this);
+        alpha_beta_para::computeBestMoveWithScore(*this);
     }
     else if (_current_player == 1)
     {

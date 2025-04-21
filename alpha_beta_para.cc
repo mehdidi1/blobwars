@@ -19,7 +19,7 @@ namespace alpha_beta_para {
         vector<movement> valid_moves;
         strategy.computeValidMoves(valid_moves);
         if (depth == 0 || valid_moves.empty()) {
-            return strategy.estimateCurrentScore(root_player);
+            return strategy.estimateCurrentScoreImproved(root_player);
         }
 
         // Maximizing player

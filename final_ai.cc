@@ -14,7 +14,7 @@ namespace final_ai
 
     // Minimum depth to guarantee
     const int MIN_DEPTH = 3;
-    const int MAX_DEPTH = 10;
+    const int MAX_DEPTH = 4;
 
     Sint32 alphabeta(Strategy &strategy, int depth, Sint32 alpha, Sint32 beta, bool maximizingPlayer, Sint32 root_player)
     {
