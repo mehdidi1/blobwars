@@ -12,10 +12,10 @@
 namespace final_ai
 {
     // Maximum depth limit for the Alpha-Beta algorithm
-    const int MAX_DEPTH = 10;
+    const int MAX_DEPTH = 3;
     
     // Minimum depth to guarantee
-    const int MIN_DEPTH = 3;
+    const int MIN_DEPTH = 1;
 
     // Maximum time allowed for search in milliseconds
     const int TIME_LIMIT = 2000; 
@@ -27,7 +27,7 @@ namespace final_ai
         strategy.computeValidMoves(valid_moves);
         if (depth == 0 || valid_moves.empty())
         {
-            return strategy.estimateCurrentScore(root_player);
+            return strategy.estimateCurrentScoreImproved(root_player);
         }
 
         // Maximizing player
@@ -98,7 +98,7 @@ namespace final_ai
         // Iterative deepening
         for (int current_depth = starting_depth; current_depth <= MAX_DEPTH && time_left; current_depth++)
         {
-            std::cout << "Searching at depth " << current_depth << std::endl;
+            //std::cout << "Searching at depth " << current_depth << std::endl;
 
             std::atomic<Sint32> best_score{std::numeric_limits<Sint32>::min()};
             movement depth_best_move = best_move; // Start with previous best
@@ -111,7 +111,7 @@ namespace final_ai
                                  ((current_time.tv_usec - start_time.tv_usec) / 1000.0);
                 if (elapsed > TIME_LIMIT * 0.8)
                 { // Allow 80% of time for completed iterations
-                    std::cout << "Time limit approaching, stopping at depth " << (current_depth - 1) << std::endl;
+                //std::cout << "Time limit approaching, stopping at depth " << (current_depth - 1) << std::endl;
                     break;
                 }
             }
@@ -164,12 +164,12 @@ namespace final_ai
             {
                 best_move = depth_best_move;
                 strategy._saveBestMove(best_move);
-                std::cout << "Depth " << current_depth << " completed. Best score: "
-                          << best_score.load() << std::endl;
+                // std::cout << "Depth " << current_depth << " completed. Best score: "
+                //           << best_score.load() << std::endl;
             }
             else
             {
-                std::cout << "Depth " << current_depth << " interrupted due to time limit." << std::endl;
+               std::cout << "Depth " << current_depth << " interrupted due to time limit." << std::endl;
                 break;
             }
         }
@@ -177,8 +177,9 @@ namespace final_ai
         // Final save of the best move
         strategy._saveBestMove(best_move);
         gettimeofday(&current_time, NULL);
-        double total_time = ((current_time.tv_sec - start_time.tv_sec) * 1000.0) +
-                            ((current_time.tv_usec - start_time.tv_usec) / 1000.0);
-        std::cout << "Search completed in " << total_time << " ms" << std::endl;
+       // double total_time = ((current_time.tv_sec - start_time.tv_sec) * 1000.0) +
+         //                   ((current_time.tv_usec - start_time.tv_usec) / 1000.0);
+        
+        //                    std::cout << "Search completed in " << total_time << " ms" << std::endl;
     }
 }

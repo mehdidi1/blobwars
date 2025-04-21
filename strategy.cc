@@ -148,14 +148,14 @@ Sint32 Strategy::estimateCurrentScoreImproved(Sint32 player) const
 
     // --- Calculate Scores ---
     // 1. Material Score (Blob difference) - High weight
-    Sint32 material_score = 100 * (my_blobs - opp_blobs);
+    Sint32 material_score = (my_blobs - opp_blobs);
     if (my_blobs == 0)
         return -99999; // Loss condition
     if (opp_blobs == 0)
         return 99999; // Win condition
 
     // 2. Corner Score - Very high weight
-    Sint32 corner_score = 50 * (my_corner_blobs - opp_corner_blobs);
+    Sint32 corner_score =  (my_corner_blobs - opp_corner_blobs);
 
     // 3. Mobility Score - Moderate weight
     Sint32 my_moves = 0, opp_moves = 0;
@@ -170,13 +170,13 @@ Sint32 Strategy::estimateCurrentScoreImproved(Sint32 player) const
         tmp.computeValidMoves(moves);
         opp_moves = moves.size();
     }
-    Sint32 mobility_score = 20 * (my_moves - opp_moves);
+    Sint32 mobility_score = (my_moves - opp_moves);
 
     // 5. Potential Capture Score - Lower weight
-    Sint32 capture_score = 30 * my_potential_captures; // Only count ours for simplicity
+    Sint32 capture_score = my_potential_captures; // Only count ours for simplicity
 
     // 6. Frontier Score (Penalty for vulnerable blobs) - Lower negative weight
-    Sint32 frontier_score = -50 * (my_frontier - opp_frontier);
+    Sint32 frontier_score =  (my_frontier - opp_frontier);
 
     // Determine current game phase
     GamePhase phase = detectGamePhase();

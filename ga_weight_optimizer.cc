@@ -7,6 +7,7 @@
 #include "alpha_beta.h"
 #include "alpha_beta_para.h"
 #include "feldman.h"
+#include "final_ai.h"
 
 // Global variables for move saving
 static movement current_saved_move;
@@ -81,26 +82,27 @@ void ChromosomeWeights::initializeDefault() {
     // Initialize with current weights from the strategy.cc file
 
 
+
     // Early game
-    early_game.material_weight = 84;
-    early_game.corner_weight = 121;
-    early_game.mobility_weight = -6;
-    early_game.capture_weight = -10;
-    early_game.frontier_weight = -20;
+    early_game.material_weight = 120 * 100;
+    early_game.corner_weight = 129 * 50;
+    early_game.mobility_weight = 23 * 20;
+    early_game.capture_weight = 13 * 30;
+    early_game.frontier_weight = -5* -50;
     
     // Mid game
-    mid_game.material_weight = 129;
-    mid_game.corner_weight = 40;
-    mid_game.mobility_weight = 5;
-    mid_game.capture_weight = 10;
-    mid_game.frontier_weight = -86;
+    mid_game.material_weight = 97 * 100;
+    mid_game.corner_weight = 84* 50;
+    mid_game.mobility_weight = 5 * 20;
+    mid_game.capture_weight = 3 * 30;
+    mid_game.frontier_weight = -50* -50;
     
     // Late game
-    late_game.material_weight = 151;
-    late_game.corner_weight = 81;
-    late_game.mobility_weight = 5;
-    late_game.capture_weight = 12;
-    late_game.frontier_weight = -55;
+    late_game.material_weight = 167 * 100;
+    late_game.corner_weight = 74* 50;
+    late_game.mobility_weight = 9 * 20;
+    late_game.capture_weight = 6 * 30;
+    late_game.frontier_weight = -29 * -50;
 
     
     // Reset fitness
@@ -430,7 +432,7 @@ void WeightOptimizer::playGameAgainstNeutral(ChromosomeWeights* weights, bool we
     Strategy gameState(blobs, holes, 0, move_saver_function);
     
     // Limit moves to prevent infinite games
-    int max_moves = 100;
+    int max_moves = 200;
     int move_count = 0;
     
     // Play until game over or move limit reached
@@ -452,7 +454,7 @@ void WeightOptimizer::playGameAgainstNeutral(ChromosomeWeights* weights, bool we
         if (is_weights_turn) {
             // Optimized weights player's turn
             gameState.useOptimizedWeights(weights);
-            alpha_beta_para::computeBestMoveWithScore(gameState);
+            final_ai::computeBestMoveWithScore(gameState);
         } else {
             // Neutral algorithm turn - use greedy instead of feldman
             feldman::computeBestMoveWithScore(gameState);
