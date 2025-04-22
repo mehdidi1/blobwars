@@ -15,14 +15,12 @@
 namespace test {
 
     // Minimum depth to guarantee
-    const int MIN_DEPTH = 3;
-    const int MAX_DEPTH = 10;
-
+    const int MIN_DEPTH = 1;
+    const int MAX_DEPTH = 4;
 
     // Store the best move found in the previous iteration of iterative deepening
     movement previous_iteration_best_move(0, 0, 0, 0);
     bool has_previous_iteration_best = false;
-
 
     // Sort moves based ONLY on the best move from the previous iterative deepening depth.
     void order_moves(vector<movement>& moves) {
@@ -44,6 +42,13 @@ namespace test {
                 }
             }
         }
+    }
+
+    // Heuristic to evaluate the "promise" of a move
+    Sint32 evaluate_move_promise(const Strategy& strategy, const movement& mv, Sint32 root_player) {
+        Strategy sim_strategy(strategy);
+        sim_strategy.applyMove(mv);
+        return sim_strategy.estimateCurrentScore(root_player); // Use a lightweight evaluation function
     }
 
     Sint32 alphabeta(Strategy &strategy, int depth, Sint32 alpha, Sint32 beta, bool maximizingPlayer, Sint32 root_player)
@@ -101,7 +106,7 @@ namespace test {
         }
     }
 
-    // Compute the best move using iterative deepening with simplified move ordering
+    // Compute the best move using iterative deepening with sequential-first approach
     void computeBestMoveWithScore(Strategy &strategy)
     {
         movement best_move(0, 0, 0, 0);
@@ -126,41 +131,77 @@ namespace test {
             std::cout << "Searching at depth " << current_depth << std::endl;
 
             std::atomic<Sint32> current_best_score{std::numeric_limits<Sint32>::min()};
-            movement current_depth_best_move(0,0,0,0); // Best move found at this depth
+            movement current_depth_best_move(0, 0, 0, 0); // Best move found at this depth
             tbb::spin_mutex best_move_mutex;
 
-            // Order root moves based *only* on previous iteration's best move
-            order_moves(valid_moves); // Order moves for the root level search
-
-            // Parallel evaluation of root moves
-            tbb::parallel_for(
-                tbb::blocked_range<size_t>(0, valid_moves.size()),
-                [&](const tbb::blocked_range<size_t>& range) {
-                    for (size_t i = range.begin(); i != range.end(); ++i) {
-                        const movement& mv = valid_moves[i];
+            // Create a working copy of valid moves
+            vector<movement> working_moves = valid_moves;
+            
+            // First, try the best move from previous iteration sequentially
+            bool sequential_move_tried = false;
+            if (has_previous_iteration_best) {
+                // Find the previous best move in the current list
+                for (size_t i = 0; i < working_moves.size(); ++i) {
+                    if (working_moves[i].ox == previous_iteration_best_move.ox &&
+                        working_moves[i].oy == previous_iteration_best_move.oy &&
+                        working_moves[i].nx == previous_iteration_best_move.nx &&
+                        working_moves[i].ny == previous_iteration_best_move.ny)
+                    {
+                        // Execute this move sequentially first
+                        sequential_move_tried = true;
+                        
+                        const movement& mv = working_moves[i];
                         Strategy sim_strategy(strategy);
                         sim_strategy.applyMove(mv);
 
-                        // Call Alpha-Beta for the opponent's turn (minimizing node)
+                        // Call Alpha-Beta for the opponent's turn
                         Sint32 score = alphabeta(sim_strategy, current_depth - 1,
                                                  std::numeric_limits<Sint32>::min(),
                                                  std::numeric_limits<Sint32>::max(),
-                                                 false, // Opponent is minimizing player
-                                                 strategy._current_player); // Root player perspective
+                                                 false, 
+                                                 strategy._current_player);
 
-                        // Update the best score and move found so far at this depth
-                        Sint32 local_best_score = current_best_score.load();
-                        if (score > local_best_score) {
-                            tbb::spin_mutex::scoped_lock lock(best_move_mutex);
-                            // Double-check after acquiring the lock
-                            if (score > current_best_score) {
-                                current_best_score = score;
-                                current_depth_best_move = mv;
+                        // Update score and best move
+                        current_best_score = score;
+                        current_depth_best_move = mv;
+                        
+                        // Remove this move from the list that will be processed in parallel
+                        working_moves.erase(working_moves.begin() + i);
+                        break;
+                    }
+                }
+            }
+
+            // Process remaining moves in parallel
+            if (!working_moves.empty()) {
+                tbb::parallel_for(
+                    tbb::blocked_range<size_t>(0, working_moves.size()),
+                    [&](const tbb::blocked_range<size_t>& range) {
+                        for (size_t i = range.begin(); i != range.end(); ++i) {
+                            const movement& mv = working_moves[i];
+                            Strategy sim_strategy(strategy);
+                            sim_strategy.applyMove(mv);
+
+                            // Call Alpha-Beta for the opponent's turn
+                            Sint32 score = alphabeta(sim_strategy, current_depth - 1,
+                                                     std::numeric_limits<Sint32>::min(),
+                                                     std::numeric_limits<Sint32>::max(),
+                                                     false,
+                                                     strategy._current_player);
+
+                            // Update the best score and move if better
+                            Sint32 local_best_score = current_best_score.load();
+                            if (score > local_best_score) {
+                                tbb::spin_mutex::scoped_lock lock(best_move_mutex);
+                                if (score > current_best_score) {
+                                    current_best_score = score;
+                                    current_depth_best_move = mv;
+                                }
                             }
                         }
                     }
-                }
-            );
+                );
+            }
 
             // Update the overall best move found across all depths
             best_move = current_depth_best_move;
@@ -168,14 +209,11 @@ namespace test {
 
             // Store the best move found at this depth to be used for ordering in the next iteration
             previous_iteration_best_move = best_move;
-            // Ensure the flag is set only if a valid move was actually found (handle edge case of no moves)
-            has_previous_iteration_best = !(best_move.ox == 0 && best_move.oy == 0 && best_move.nx == 0 && best_move.ny == 0);
-
+            has_previous_iteration_best = !(best_move.ox == 0 && best_move.oy == 0 && 
+                                           best_move.nx == 0 && best_move.ny == 0);
 
             std::cout << "Depth " << current_depth << " completed. Best score: "
                       << current_best_score.load() << std::endl;
-
         }
-
     }
 } // namespace test

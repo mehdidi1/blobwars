@@ -12,8 +12,8 @@
 namespace final_ai
 {
     // Minimum depth to guarantee
-    const int MIN_DEPTH = 3;
-    const int MAX_DEPTH = 10;
+    const int MIN_DEPTH = 1;
+    const int MAX_DEPTH = 4;
 
 
     // Store the best move found in the previous iteration of iterative deepening
