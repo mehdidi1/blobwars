@@ -278,101 +278,13 @@ vector<movement> &Strategy::computeValidMoves(vector<movement> &valid_moves) con
 }
 
 // Strategy selector
-// void Strategy::computeBestMove()
-// {
-//     // Add timing code
-//     struct timeval start_time, end_time;
-//     gettimeofday(&start_time, NULL);
-
-//     // Existing code
-// #ifdef USE_GREEDY
-//     greedy::computeBestMoveWithScore(*this);
-// #elif defined(USE_MINIMAX)
-//     minimax::computeBestMoveWithScore(*this);
-// #else
-//     // Default strategy implementation...
-//     movement best_move(0, 0, 0, 0);
-//     vector<movement> valid_moves;
-//     computeValidMoves(valid_moves);
-
-//     if (!valid_moves.empty())
-//     {
-//         best_move = valid_moves[0]; // Just pick the first valid move
-//     }
-
-//     _saveBestMove(best_move);
-// #endif
-
-//     // Calculate and display elapsed time
-//     gettimeofday(&end_time, NULL);
-//     double elapsed = ((end_time.tv_sec - start_time.tv_sec) * 1000.0) +
-//                      ((end_time.tv_usec - start_time.tv_usec) / 1000.0);
-//     std::cout << "Best move computation took " << elapsed << " milliseconds" << std::endl;
-// }
-
 void Strategy::computeBestMove()
 {
-    // Player 1 is blue
-    // Player 0 is red
 
-    // Read previous statistics - separate for each player
-    double total_time_p0 = 0.0;
-    int total_moves_p0 = 0;
-    double total_time_p1 = 0.0;
-    int total_moves_p1 = 0;
+    final_ai::computeBestMoveWithScore(*this);
 
-    std::ifstream stats_file("move_stats.txt");
-    if (stats_file.good())
-    {
-        stats_file >> total_time_p0 >> total_moves_p0 >> total_time_p1 >> total_moves_p1;
-        stats_file.close();
-    }
-
-    // Add timing code
-    struct timeval start_time, end_time;
-    gettimeofday(&start_time, NULL);
-
-    // Select strategy based on the current player
-    if (_current_player == 0)
-    {
-        test::computeBestMoveWithScore(*this);
-    }
-    else if (_current_player == 1)
-    {
-        final_ai::computeBestMoveWithScore(*this);
-    }
-
-    // Calculate elapsed time
-    gettimeofday(&end_time, NULL);
-    double elapsed = ((end_time.tv_sec - start_time.tv_sec) * 1000.0) +
-                     ((end_time.tv_usec - start_time.tv_usec) / 1000.0);
-
-    // Update metrics for the specific player
-    if (_current_player == 0)
-    {
-        total_time_p0 += elapsed;
-        total_moves_p0++;
-        double avg_time = total_time_p0 / total_moves_p0;
-        std::cout << "Player 0 (Red) move took " << elapsed << " ms" << std::endl;
-        std::cout << "Player 0 average time: " << avg_time << " ms"
-                  << " (over " << total_moves_p0 << " moves)" << std::endl;
-    }
-    else
-    {
-        total_time_p1 += elapsed;
-        total_moves_p1++;
-        double avg_time = total_time_p1 / total_moves_p1;
-        std::cout << "Player 1 (Blue) move took " << elapsed << " ms" << std::endl;
-        std::cout << "Player 1 average time: " << avg_time << " ms"
-                  << " (over " << total_moves_p1 << " moves)" << std::endl;
-    }
-
-    // Save updated statistics for both players
-    std::ofstream stats_out("move_stats.txt");
-    stats_out << total_time_p0 << " " << total_moves_p0 << " "
-              << total_time_p1 << " " << total_moves_p1;
-    stats_out.close();
 }
+
 
 // Add this function to detect game phase
 Strategy::GamePhase Strategy::detectGamePhase() const
@@ -410,3 +322,68 @@ Strategy::GamePhase Strategy::detectGamePhase() const
         return MID_GAME;
     }
 }
+
+
+// void Strategy::computeBestMove()
+// {
+//     // Player 1 is blue
+//     // Player 0 is red
+
+//     // Read previous statistics - separate for each player
+//     double total_time_p0 = 0.0;
+//     int total_moves_p0 = 0;
+//     double total_time_p1 = 0.0;
+//     int total_moves_p1 = 0;
+
+//     std::ifstream stats_file("move_stats.txt");
+//     if (stats_file.good())
+//     {
+//         stats_file >> total_time_p0 >> total_moves_p0 >> total_time_p1 >> total_moves_p1;
+//         stats_file.close();
+//     }
+
+//     // Add timing code
+//     struct timeval start_time, end_time;
+//     gettimeofday(&start_time, NULL);
+
+//     // Select strategy based on the current player
+//     if (_current_player == 1)
+//     {
+//         test::computeBestMoveWithScore(*this);
+//     }
+//     else if (_current_player == 0)
+//     {
+//         final_ai::computeBestMoveWithScore(*this);
+//     }
+
+//     // Calculate elapsed time
+//     gettimeofday(&end_time, NULL);
+//     double elapsed = ((end_time.tv_sec - start_time.tv_sec) * 1000.0) +
+//                      ((end_time.tv_usec - start_time.tv_usec) / 1000.0);
+
+//     // Update metrics for the specific player
+//     if (_current_player == 0)
+//     {
+//         total_time_p0 += elapsed;
+//         total_moves_p0++;
+//         double avg_time = total_time_p0 / total_moves_p0;
+//         std::cout << "Player 0 (Red) move took " << elapsed << " ms" << std::endl;
+//         std::cout << "Player 0 average time: " << avg_time << " ms"
+//                   << " (over " << total_moves_p0 << " moves)" << std::endl;
+//     }
+//     else
+//     {
+//         total_time_p1 += elapsed;
+//         total_moves_p1++;
+//         double avg_time = total_time_p1 / total_moves_p1;
+//         std::cout << "Player 1 (Blue) move took " << elapsed << " ms" << std::endl;
+//         std::cout << "Player 1 average time: " << avg_time << " ms"
+//                   << " (over " << total_moves_p1 << " moves)" << std::endl;
+//     }
+
+//     // Save updated statistics for both players
+//     std::ofstream stats_out("move_stats.txt");
+//     stats_out << total_time_p0 << " " << total_moves_p0 << " "
+//               << total_time_p1 << " " << total_moves_p1;
+//     stats_out.close();
+// }

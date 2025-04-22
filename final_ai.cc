@@ -125,7 +125,6 @@ namespace final_ai
        // Iterative deepening loop
        for (int current_depth = MIN_DEPTH; current_depth <= MAX_DEPTH; ++current_depth)
        {
-           std::cout << "Searching at depth " << current_depth << std::endl;
 
            std::atomic<Sint32> current_best_score{std::numeric_limits<Sint32>::min()};
            movement current_depth_best_move(0, 0, 0, 0); // Best move found at this depth
@@ -207,8 +206,6 @@ namespace final_ai
            has_previous_iteration_best = !(best_move.ox == 0 && best_move.oy == 0 && 
                                           best_move.nx == 0 && best_move.ny == 0);
 
-           std::cout << "Depth " << current_depth << " completed. Best score: "
-                     << current_best_score.load() << std::endl;
        }
    }
 }
