@@ -335,7 +335,7 @@ void Strategy::computeBestMove()
     // Select strategy based on the current player
     if (_current_player == 0)
     {
-        alpha_beta_para::computeBestMoveWithScore(*this);
+        test::computeBestMoveWithScore(*this);
     }
     else if (_current_player == 1)
     {
